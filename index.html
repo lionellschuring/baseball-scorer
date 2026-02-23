@@ -466,6 +466,23 @@
 
     .changes-sub-btn:active { background: #e5e7eb; }
 
+    .changes-pos-btn {
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: #f3f4f6;
+      border: 1.5px solid #d1d5db;
+      border-radius: 7px;
+      padding: 5px 8px;
+      color: #374151;
+      cursor: pointer;
+      min-width: 46px;
+      text-align: center;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .changes-pos-btn:active { background: #e5e7eb; }
+
     .changes-sub-form {
       padding: 8px 16px 10px 40px;
       background: #f8fafc;
@@ -2402,14 +2419,10 @@
       if (!lineup || lineup.length === 0) return;
       html += `<div class="changes-team-label">${n[team]}</div>`;
       lineup.forEach((p, i) => {
-        const posOpts = POSITIONS.map(pos =>
-          `<option value="${pos}" ${p.pos === pos ? 'selected' : ''}>${pos}</option>`
-        ).join('');
         html += `
         <div class="changes-player-row" id="cpr-${team}-${i}">
           <span class="changes-order">${i + 1}</span>
-          <select class="player-pos-select" style="width:52px"
-            onchange="changePlayerPos('${team}', ${i}, this.value)">${posOpts}</select>
+          <button class="changes-pos-btn" onclick="pickPosition('${team}', ${i})">${escAttr(p.pos || '—')} ▾</button>
           <span class="changes-name">${escAttr(p.name || `Player ${i + 1}`)}</span>
           <button class="changes-sub-btn" onclick="toggleSubForm('${team}', ${i})">Sub ↕</button>
         </div>
@@ -2429,10 +2442,17 @@
     list.innerHTML = html;
   }
 
-  function changePlayerPos(team, idx, newPos) {
-    if (state.lineup[team] && state.lineup[team][idx]) {
-      state.lineup[team][idx].pos = newPos;
-    }
+  function pickPosition(team, idx) {
+    const p = state.lineup[team] && state.lineup[team][idx];
+    if (!p) return;
+    const name = p.name || `Player ${idx + 1}`;
+    const buttons = POSITIONS.map(pos => ({
+      label: pos === p.pos ? `${pos}  ✓` : pos,
+      cls:   pos === p.pos ? 'as-btn-hit' : 'as-btn-advance',
+      fn() { p.pos = pos; renderChangesPanel(); }
+    }));
+    buttons.push({ label: 'Cancel', cls: 'as-btn-cancel', fn() {} });
+    showActionSheet(`${name} — Position`, buttons);
   }
 
   function toggleSubForm(team, idx) {
