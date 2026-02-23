@@ -153,6 +153,37 @@
       border-left: 2px solid #333 !important;
     }
 
+    /* ── PITCH COUNT ── */
+    .pitch-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 14px;
+      padding: 4px 0;
+    }
+
+    #pitchCount {
+      font-size: 2rem;
+      font-weight: bold;
+      color: #fff;
+      min-width: 3ch;
+      text-align: center;
+    }
+
+    .pitch-adj {
+      background: #1c1c1c;
+      border: 1px solid #2e2e2e;
+      border-radius: 6px;
+      color: #aaa;
+      font-size: 1.1rem;
+      width: 36px;
+      height: 36px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .pitch-adj:active { filter: brightness(0.7); }
+
     /* ── DIAMOND ── */
     .diamond-wrap {
       display: flex;
@@ -358,6 +389,14 @@
   </svg>
 </div>
 
+<!-- Pitch count -->
+<div class="pitch-row">
+  <span class="count-label">Pitches</span>
+  <button class="pitch-adj" onclick="adjustPitches(-1)">−</button>
+  <span id="pitchCount">0</span>
+  <button class="pitch-adj" onclick="adjustPitches(1)">+</button>
+</div>
+
 <!-- Count (B / S / O) -->
 <div class="count-row">
   <div class="count-group">
@@ -406,6 +445,7 @@
       strikes:   0,
       outs:      0,
       bases:     [false, false, false],                        // [1st, 2nd, 3rd]
+      pitches:   0,
       scorecard: Array.from({length: 9}, () => ({away: null, home: null}))
     };
   }
@@ -470,6 +510,9 @@
       document.getElementById(baseIds[i]).setAttribute('fill', on ? '#f5a623' : '#333');
     });
 
+    // Pitch count
+    document.getElementById('pitchCount').textContent = state.pitches;
+
     // Count dots
     makeDots('ballDots',   state.balls,   3, 'ball');
     makeDots('strikeDots', state.strikes, 2, 'strike');
@@ -512,6 +555,7 @@
 
   // ─── ACTIONS ───────────────────────────────────────────────────────────────
   function doBall() {
+    state.pitches++;
     state.balls++;
     if (state.balls >= 4) {
       state.balls   = 0;
@@ -522,18 +566,20 @@
   }
 
   function doStrike() {
+    state.pitches++;
     state.strikes++;
     if (state.strikes >= 3) {
       state.strikes = 0;
       state.balls   = 0;
-      doOut();          // strikeout counts as an out
+      doOut(true);      // pitch already counted above
       return;
     }
     render();
   }
 
-  function doOut() {
+  function doOut(pitchCounted = false) {
     if (state.outs >= 3) return;   // guard against double-tap
+    if (!pitchCounted) state.pitches++;
     state.outs++;
     state.balls   = 0;
     state.strikes = 0;
@@ -569,6 +615,11 @@
     render();
   }
 
+  function adjustPitches(delta) {
+    state.pitches = Math.max(0, state.pitches + delta);
+    render();
+  }
+
   function toggleBase(i) {
     state.bases[i] = !state.bases[i];
     render();
@@ -591,6 +642,7 @@
     state.outs    = 0;
     state.balls   = 0;
     state.strikes = 0;
+    state.pitches = 0;
     state.bases   = [false, false, false];
   }
 
