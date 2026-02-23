@@ -679,6 +679,18 @@
       font-weight: 700;
     }
 
+    .pitching-header {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #6b7280;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      padding-top: 10px;
+      border-top: 1px solid #f3f4f6;
+    }
+
     /* ── SETUP SCREEN ── */
     #mainScreen {
       display: flex;
@@ -1127,9 +1139,10 @@
       bases:     [null, null, null],
       pitches:   0,
       scorecard: Array.from({length: 9}, () => ({away: null, home: null})),
-      lineup:     { away: [], home: [] },
-      batterIdx:  { away: 0, home: 0 },
-      lastBatter: { away: null, home: null }
+      lineup:       { away: [], home: [] },
+      batterIdx:    { away: 0, home: 0 },
+      lastBatter:   { away: null, home: null },
+      pitcherOuts:  { away: 0, home: 0 }
     };
   }
 
@@ -1361,9 +1374,20 @@
   function doOut(pitchCounted = false, isK = false) {
     if (state.outs >= 3) return;
     if (!pitchCounted) state.pitches++;
-    recordStat(isK ? 'k' : 'out');
-    setLastBatter(battingTeam());
-    advanceBatter();
+    const defTeam = battingTeam() === 'away' ? 'home' : 'away';
+    if (isK) {
+      recordStat('k');
+      setLastBatter(battingTeam());
+      autoCreditCatcher(defTeam);
+      creditPitcherOut(defTeam);
+      advanceBatter();
+      finalizeOut();
+    } else {
+      showOutPicker(defTeam);
+    }
+  }
+
+  function finalizeOut() {
     state.outs++;
     state.balls   = 0;
     state.strikes = 0;
@@ -1372,6 +1396,49 @@
       showToast('3 Outs — Side retired!', 2200);
       setTimeout(() => { advanceHalf(); render(); }, 1000);
     }
+  }
+
+  function creditPitcherOut(defTeam) {
+    state.pitcherOuts[defTeam] = (state.pitcherOuts[defTeam] || 0) + 1;
+  }
+
+  function autoCreditCatcher(defTeam) {
+    const catcher = (state.lineup[defTeam] || []).find(p => p.pos && p.pos.toUpperCase() === 'C');
+    if (catcher) catcher.po = (catcher.po || 0) + 1;
+  }
+
+  function showOutPicker(defTeam) {
+    const outTypes = ['Flyout', 'Groundout', 'Lineout', 'Pop-up'];
+    showActionSheet('Type of Out', [
+      ...outTypes.map(t => ({
+        label: t, cls: 'as-btn-advance',
+        fn() { showFielderPicker(t, defTeam); }
+      })),
+      { label: 'Other',  cls: 'as-btn-advance', fn() { applyOutFinal(); } },
+      { label: 'Cancel', cls: 'as-btn-cancel',  fn() {} },
+    ]);
+  }
+
+  function showFielderPicker(outType, defTeam) {
+    const defLineup = state.lineup[defTeam] || [];
+    const fielderBtns = defLineup.map((p, i) => ({
+      label: `${p.pos || '?'}  ${p.name || 'Player ' + (i + 1)}`,
+      cls: 'as-btn-advance',
+      fn() { p.po = (p.po || 0) + 1; applyOutFinal(); }
+    }));
+    showActionSheet(`${outType} — Who made the play?`, [
+      ...fielderBtns,
+      { label: 'Unknown fielder', cls: 'as-btn-cancel', fn() { applyOutFinal(); } },
+    ]);
+  }
+
+  function applyOutFinal() {
+    const defTeam = battingTeam() === 'away' ? 'home' : 'away';
+    recordStat('out');
+    setLastBatter(battingTeam());
+    creditPitcherOut(defTeam);
+    advanceBatter();
+    finalizeOut();
   }
 
   function doHit() {
@@ -1564,8 +1631,9 @@
         label: '✕ Out on bases',
         cls: 'as-btn-out',
         fn() {
+          const defTeam = battingTeam() === 'away' ? 'home' : 'away';
           state.bases[baseIdx] = null;
-          // Base-running out: don't advance batter, don't reset count
+          creditPitcherOut(defTeam);
           state.outs++;
           render();
           if (state.outs >= 3) {
@@ -1659,8 +1727,8 @@
     state = freshState();
     // Deep copy lineup and add fresh stat counters
     state.lineup = {
-      away: setupLineup.away.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0 })),
-      home: setupLineup.home.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0 }))
+      away: setupLineup.away.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0, po:0 })),
+      home: setupLineup.home.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0, po:0 }))
     };
     document.getElementById('awayInput').value =
       document.getElementById('setupAwayInput').value.trim() || 'Away';
@@ -1840,7 +1908,8 @@
           if (!b || typeof b === 'boolean') return null;
           return b; // already a runner object
         });
-        if (!state.lastBatter) state.lastBatter = { away: null, home: null };
+        if (!state.lastBatter)  state.lastBatter  = { away: null, home: null };
+        if (!state.pitcherOuts) state.pitcherOuts = { away: 0, home: 0 };
         // Ensure stat fields exist on all players (backwards compat)
         ['away', 'home'].forEach(team => {
           (state.lineup[team] || []).forEach(p => {
@@ -1851,6 +1920,7 @@
             if (p.rbi === undefined) p.rbi = 0;
             if (p.bb  === undefined) p.bb  = 0;
             if (p.k   === undefined) p.k   = 0;
+            if (p.po  === undefined) p.po  = 0;
           });
         });
         document.getElementById('awayInput').value = saved.away || 'Away';
@@ -1875,10 +1945,11 @@
       awayRuns:  totalRuns('away'),
       homeRuns:  totalRuns('home'),
       scorecard: state.scorecard.map(inn => ({...inn})),
-      lineup:    {
+      lineup:       {
         away: (state.lineup.away || []).map(p => ({...p})),
         home: (state.lineup.home || []).map(p => ({...p}))
-      }
+      },
+      pitcherOuts:  { ...state.pitcherOuts }
     };
     const history = getHistory();
     history.unshift(entry);
@@ -1901,24 +1972,47 @@
     ['away', 'home'].forEach(team => {
       const players = lu[team];
       if (!players || players.length === 0) return;
-      const teamName = team === 'away' ? e.away : e.home;
+      const teamName  = team === 'away' ? e.away : e.home;
+      const oppTeam   = team === 'away' ? 'home' : 'away';
+      const oppPlayers = lu[oppTeam] || [];
       html += `<div>
         <div class="lineup-stats-team">${teamName}</div>
         <table class="lineup-stats-table">
           <thead><tr>
             <th>#</th><th class="lss-name">Name</th>
-            <th>AB</th><th>H</th><th>AVG</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th>
+            <th>AB</th><th>H</th><th>AVG</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>PO</th>
           </tr></thead><tbody>`;
       players.forEach((p, i) => {
-        const ab = p.ab||0, h = p.h||0, hr = p.hr||0, r = p.r||0, rbi = p.rbi||0, bb = p.bb||0, k = p.k||0;
+        const ab = p.ab||0, h = p.h||0, hr = p.hr||0, r = p.r||0, rbi = p.rbi||0, bb = p.bb||0, k = p.k||0, po = p.po||0;
         const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '—';
         html += `<tr>
           <td>${i+1}</td><td class="lss-name">${p.name || `Player ${i+1}`}</td>
           <td>${ab}</td><td>${h}</td><td>${avg}</td>
-          <td>${hr}</td><td>${r}</td><td>${rbi}</td><td>${bb}</td><td>${k}</td>
+          <td>${hr}</td><td>${r}</td><td>${rbi}</td><td>${bb}</td><td>${k}</td><td>${po}</td>
         </tr>`;
       });
-      html += `</tbody></table></div>`;
+      html += `</tbody></table>`;
+
+      const pitcher = players.find(p => p.pos && p.pos.toUpperCase() === 'P');
+      if (pitcher) {
+        const pitchK  = oppPlayers.reduce((s, p) => s + (p.k  || 0), 0);
+        const pitchBB = oppPlayers.reduce((s, p) => s + (p.bb || 0), 0);
+        const pitchH  = oppPlayers.reduce((s, p) => s + (p.h  || 0) + (p.hr || 0), 0);
+        const pitchR  = team === 'away' ? (e.homeRuns || 0) : (e.awayRuns || 0);
+        const po      = (e.pitcherOuts || {})[team] || 0;
+        const ip      = Math.floor(po / 3) + '.' + (po % 3);
+        html += `<div class="pitching-header">Pitching</div>
+        <table class="lineup-stats-table">
+          <thead><tr>
+            <th class="lss-name">Pitcher</th>
+            <th>IP</th><th>H</th><th>R</th><th>K</th><th>BB</th>
+          </tr></thead><tbody><tr>
+            <td class="lss-name">${pitcher.name || 'Pitcher'}</td>
+            <td>${ip}</td><td>${pitchH}</td><td>${pitchR}</td><td>${pitchK}</td><td>${pitchBB}</td>
+          </tr></tbody></table>`;
+      }
+
+      html += `</div>`;
     });
     return html || '<div class="history-empty" style="padding:6px 0">No player stats saved for this game.</div>';
   }
@@ -2037,32 +2131,56 @@
     ['away', 'home'].forEach(team => {
       const lineup = state.lineup[team];
       if (!lineup || lineup.length === 0) return;
-      const curIdx = state.batterIdx[team];
+      const curIdx  = state.batterIdx[team];
+      const oppTeam = team === 'away' ? 'home' : 'away';
+      const oppLineup = state.lineup[oppTeam] || [];
 
       html += `<div class="card" style="padding:12px 14px;">
         <div class="lineup-stats-team">${n[team]}</div>
         <table class="lineup-stats-table">
           <thead><tr>
             <th>#</th><th class="lss-name">Name</th>
-            <th>AB</th><th>H</th><th>AVG</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th>
+            <th>AB</th><th>H</th><th>AVG</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>PO</th>
           </tr></thead><tbody>`;
 
       lineup.forEach((p, i) => {
         const isCur = (team === battingTeam() && i === curIdx);
         const ab  = p.ab  || 0, h   = p.h   || 0;
         const hr  = p.hr  || 0, r   = p.r   || 0;
-        const rbi = p.rbi || 0, bb  = p.bb  || 0, k = p.k || 0;
+        const rbi = p.rbi || 0, bb  = p.bb  || 0, k = p.k || 0, po = p.po || 0;
         const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '—';
         html += `<tr class="${isCur ? 'lss-current' : ''}">
           <td>${i + 1}</td>
           <td class="lss-name">${p.name || `Player ${i+1}`}</td>
           <td>${ab}</td><td>${h}</td><td>${avg}</td>
           <td>${hr}</td><td>${r}</td><td>${rbi}</td>
-          <td>${bb}</td><td>${k}</td>
+          <td>${bb}</td><td>${k}</td><td>${po}</td>
         </tr>`;
       });
 
-      html += `</tbody></table></div>`;
+      html += `</tbody></table>`;
+
+      // Pitching section — only shown when a pitcher (pos P) is in the lineup
+      const pitcher = lineup.find(p => p.pos && p.pos.toUpperCase() === 'P');
+      if (pitcher) {
+        const pitchK  = oppLineup.reduce((s, p) => s + (p.k  || 0), 0);
+        const pitchBB = oppLineup.reduce((s, p) => s + (p.bb || 0), 0);
+        const pitchH  = oppLineup.reduce((s, p) => s + (p.h  || 0) + (p.hr || 0), 0);
+        const pitchR  = totalRuns(oppTeam);
+        const outs    = state.pitcherOuts[team] || 0;
+        const ip      = Math.floor(outs / 3) + '.' + (outs % 3);
+        html += `<div class="pitching-header">Pitching</div>
+        <table class="lineup-stats-table">
+          <thead><tr>
+            <th class="lss-name">Pitcher</th>
+            <th>IP</th><th>H</th><th>R</th><th>K</th><th>BB</th>
+          </tr></thead><tbody><tr>
+            <td class="lss-name">${pitcher.name || 'Pitcher'}</td>
+            <td>${ip}</td><td>${pitchH}</td><td>${pitchR}</td><td>${pitchK}</td><td>${pitchBB}</td>
+          </tr></tbody></table>`;
+      }
+
+      html += `</div>`;
     });
 
     el.innerHTML = html || '<div class="history-empty">No lineup set.</div>';
@@ -2128,6 +2246,7 @@
       { key: 'rbi',  x: 438,      align: 'right',  label: 'RBI' },
       { key: 'bb',   x: 474,      align: 'right',  label: 'BB'  },
       { key: 'k',    x: 504,      align: 'right',  label: 'K'   },
+      { key: 'po',   x: 540,      align: 'right',  label: 'PO'  },
     ];
     const nameMaxW = 175;
 
@@ -2182,7 +2301,7 @@
 
         const rowVals = { num: String(i + 1), name: p.name || `Player ${i+1}`,
           ab: String(ab), h: String(h), avg, hr: String(hr),
-          r: String(r), rbi: String(rbi), bb: String(bb), k: String(k) };
+          r: String(r), rbi: String(rbi), bb: String(bb), k: String(k), po: String(p.po || 0) };
 
         colDefs.forEach(col => {
           ctx.textAlign = col.align;
