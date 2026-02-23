@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <title>Baseball Scorer</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    body {
+      background: #0f0f0f;
+      color: #eee;
+      font-family: 'Courier New', Courier, monospace;
+      min-height: 100vh;
+      max-width: 480px;
+      margin: 0 auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    /* ── TEAM NAMES ── */
+    .header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+    }
+
+    .team-input {
+      flex: 1;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid #333;
+      color: #fff;
+      font-size: 1.1rem;
+      font-family: inherit;
+      font-weight: bold;
+      text-transform: uppercase;
+      text-align: center;
+      padding: 4px 2px;
+      transition: border-color 0.2s;
+    }
+
+    .team-input:focus {
+      outline: none;
+      border-bottom-color: #f5a623;
+    }
+
+    .vs-label {
+      color: #444;
+      font-size: 0.8rem;
+      padding: 0 4px;
+      flex-shrink: 0;
+    }
+
+    /* ── INNING INDICATOR ── */
+    .inning-indicator {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .half-arrows {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+      align-items: center;
+    }
+
+    .arrow-up {
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-bottom: 9px solid #2a2a2a;
+    }
+
+    .arrow-up.active  { border-bottom-color: #f5a623; }
+
+    .arrow-down {
+      width: 0;
+      height: 0;
+      border-left: 7px solid transparent;
+      border-right: 7px solid transparent;
+      border-top: 9px solid #2a2a2a;
+    }
+
+    .arrow-down.active { border-top-color: #f5a623; }
+
+    .inning-text {
+      font-size: 1rem;
+      color: #aaa;
+      letter-spacing: 1px;
+      text-transform: uppercase;
+    }
+
+    /* ── SCOREBOARD ── */
+    .scoreboard-wrapper {
+      overflow-x: auto;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      background: #161616;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.82rem;
+    }
+
+    th, td {
+      padding: 7px 4px;
+      text-align: center;
+      border: 1px solid #222;
+      min-width: 24px;
+    }
+
+    thead th {
+      background: #1e1e1e;
+      color: #555;
+      font-weight: normal;
+    }
+
+    .team-cell {
+      text-align: left !important;
+      padding-left: 8px !important;
+      color: #888;
+      font-weight: bold;
+      white-space: nowrap;
+      min-width: 56px;
+    }
+
+    .batting { color: #f5a623 !important; }
+
+    .active-cell {
+      background: #1f1a00;
+      color: #f5a623;
+      font-weight: bold;
+    }
+
+    .runs-col {
+      background: #1a1a1a !important;
+      color: #fff !important;
+      font-weight: bold;
+      border-left: 2px solid #333 !important;
+    }
+
+    /* ── DIAMOND ── */
+    .diamond-wrap {
+      display: flex;
+      justify-content: center;
+      padding: 2px 0;
+    }
+
+    /* ── COUNT ── */
+    .count-row {
+      display: flex;
+      justify-content: space-around;
+      padding: 10px 0;
+      border-top: 1px solid #222;
+      border-bottom: 1px solid #222;
+    }
+
+    .count-group {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .count-label {
+      font-size: 0.65rem;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .dots {
+      display: flex;
+      gap: 7px;
+    }
+
+    .dot {
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      border: 2px solid;
+    }
+
+    .dot-ball            { border-color: #388e3c; }
+    .dot-ball.lit        { background: #4caf50; border-color: #4caf50; }
+    .dot-strike          { border-color: #c62828; }
+    .dot-strike.lit      { background: #e53935; border-color: #e53935; }
+    .dot-out             { border-color: #c62828; }
+    .dot-out.lit         { background: #e53935; border-color: #e53935; }
+
+    /* ── ACTION BUTTONS ── */
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      padding: 20px 10px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      font-family: inherit;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      cursor: pointer;
+      color: #fff;
+    }
+
+    .btn:active { filter: brightness(0.7); }
+
+    .btn-ball   { background: #1b5e20; }
+    .btn-strike { background: #7f0000; }
+    .btn-out    { background: #4a148c; }
+    .btn-run    { background: #0d47a1; }
+
+    /* ── SECONDARY ── */
+    .secondary {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+
+    .btn-sm {
+      padding: 11px 4px;
+      background: #1c1c1c;
+      border: 1px solid #2e2e2e;
+      border-radius: 6px;
+      color: #888;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-sm:active { filter: brightness(0.7); }
+
+    /* ── NEW GAME ── */
+    .new-game-row {
+      display: flex;
+      justify-content: center;
+      padding-bottom: 6px;
+    }
+
+    .btn-new-game {
+      padding: 10px 24px;
+      background: transparent;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      color: #444;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .btn-new-game:active { color: #888; border-color: #555; }
+
+    /* ── TOAST ── */
+    #toast {
+      position: fixed;
+      top: 16px;
+      left: 50%;
+      transform: translateX(-50%);
+      background: #2a2a2a;
+      border: 1px solid #555;
+      color: #fff;
+      padding: 12px 22px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 1rem;
+      z-index: 999;
+      display: none;
+      white-space: nowrap;
+    }
+  </style>
+</head>
+<body>
+
+<div id="toast"></div>
+
+<!-- Team names -->
+<div class="header">
+  <input class="team-input" id="awayInput" value="Away" maxlength="10"
+         autocomplete="off" autocorrect="off" spellcheck="false" placeholder="AWAY">
+  <span class="vs-label">vs</span>
+  <input class="team-input" id="homeInput" value="Home" maxlength="10"
+         autocomplete="off" autocorrect="off" spellcheck="false" placeholder="HOME">
+</div>
+
+<!-- Inning indicator -->
+<div class="inning-indicator">
+  <div class="half-arrows">
+    <div class="arrow-up"   id="arrowUp"></div>
+    <div class="arrow-down" id="arrowDown"></div>
+  </div>
+  <div class="inning-text" id="inningText">TOP — 1st INNING</div>
+</div>
+
+<!-- Scoreboard -->
+<div class="scoreboard-wrapper">
+  <table id="scoreboard"></table>
+</div>
+
+<!-- Diamond -->
+<div class="diamond-wrap">
+  <svg width="160" height="160" viewBox="0 0 200 200">
+    <!-- Dirt infield -->
+    <polygon points="100,18 182,100 100,182 18,100"
+             fill="#1c1000" stroke="#3a2800" stroke-width="1"/>
+    <!-- Grass infield -->
+    <polygon points="100,34 166,100 100,166 34,100"
+             fill="#0f1f08" stroke="none"/>
+
+    <!-- Base paths -->
+    <line x1="100" y1="182" x2="182" y2="100" stroke="#3a2800" stroke-width="1.5"/>
+    <line x1="182" y1="100" x2="100" y2="18"  stroke="#3a2800" stroke-width="1.5"/>
+    <line x1="100" y1="18"  x2="18"  y2="100" stroke="#3a2800" stroke-width="1.5"/>
+    <line x1="18"  y1="100" x2="100" y2="182" stroke="#3a2800" stroke-width="1.5"/>
+
+    <!-- Home plate (bottom, visual only) -->
+    <polygon points="100,190 109,181 109,175 91,175 91,181" fill="#888" stroke="none"/>
+
+    <!-- 2nd base (top) -->
+    <rect id="base2" x="87" y="7" width="26" height="22" rx="3"
+          fill="#333" stroke="#666" stroke-width="1.5"
+          style="cursor:pointer" onclick="toggleBase(1)"/>
+    <text x="100" y="21" fill="#aaa" font-size="11" font-family="Courier New"
+          text-anchor="middle" dominant-baseline="middle" pointer-events="none">2</text>
+
+    <!-- 1st base (right) -->
+    <rect id="base1" x="163" y="88" width="26" height="24" rx="3"
+          fill="#333" stroke="#666" stroke-width="1.5"
+          style="cursor:pointer" onclick="toggleBase(0)"/>
+    <text x="176" y="101" fill="#aaa" font-size="11" font-family="Courier New"
+          text-anchor="middle" dominant-baseline="middle" pointer-events="none">1</text>
+
+    <!-- 3rd base (left) -->
+    <rect id="base3" x="11" y="88" width="26" height="24" rx="3"
+          fill="#333" stroke="#666" stroke-width="1.5"
+          style="cursor:pointer" onclick="toggleBase(2)"/>
+    <text x="24" y="101" fill="#aaa" font-size="11" font-family="Courier New"
+          text-anchor="middle" dominant-baseline="middle" pointer-events="none">3</text>
+  </svg>
+</div>
+
+<!-- Count (B / S / O) -->
+<div class="count-row">
+  <div class="count-group">
+    <div class="count-label">Balls</div>
+    <div class="dots" id="ballDots"></div>
+  </div>
+  <div class="count-group">
+    <div class="count-label">Strikes</div>
+    <div class="dots" id="strikeDots"></div>
+  </div>
+  <div class="count-group">
+    <div class="count-label">Outs</div>
+    <div class="dots" id="outDots"></div>
+  </div>
+</div>
+
+<!-- Main action buttons -->
+<div class="actions">
+  <button class="btn btn-ball"   onclick="doBall()">Ball</button>
+  <button class="btn btn-strike" onclick="doStrike()">Strike</button>
+  <button class="btn btn-out"    onclick="doOut()">Out</button>
+  <button class="btn btn-run"    onclick="doRun()">+ Run</button>
+</div>
+
+<!-- Secondary controls -->
+<div class="secondary">
+  <button class="btn-sm" onclick="undoRun()">− Run</button>
+  <button class="btn-sm" onclick="resetCount()">Reset Count</button>
+  <button class="btn-sm" onclick="nextHalf()">Next Half ▶</button>
+</div>
+
+<!-- New game -->
+<div class="new-game-row">
+  <button class="btn-new-game" onclick="newGame()">New Game</button>
+</div>
+
+<script>
+  // ─── STATE ─────────────────────────────────────────────────────────────────
+  let state = freshState();
+
+  function freshState() {
+    return {
+      inning:    1,
+      isTop:     true,   // true = top (away bats), false = bottom (home bats)
+      balls:     0,
+      strikes:   0,
+      outs:      0,
+      bases:     [false, false, false],                        // [1st, 2nd, 3rd]
+      scorecard: Array.from({length: 9}, () => ({away: null, home: null}))
+    };
+  }
+
+  // ─── HELPERS ───────────────────────────────────────────────────────────────
+  function ordinal(n) {
+    const s = ['th','st','nd','rd'];
+    const v = n % 100;
+    return n + (s[(v - 20) % 10] || s[v] || s[0]);
+  }
+
+  function teamNames() {
+    return {
+      away: document.getElementById('awayInput').value.trim() || 'Away',
+      home: document.getElementById('homeInput').value.trim() || 'Home'
+    };
+  }
+
+  function battingTeam() {
+    return state.isTop ? 'away' : 'home';
+  }
+
+  function ensureInning(idx) {
+    while (state.scorecard.length <= idx) {
+      state.scorecard.push({away: null, home: null});
+    }
+  }
+
+  function totalRuns(team) {
+    return state.scorecard.reduce((sum, inn) => sum + (inn[team] || 0), 0);
+  }
+
+  // ─── TOAST ─────────────────────────────────────────────────────────────────
+  let toastTimer = null;
+
+  function showToast(msg, ms = 1800) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.style.display = 'block';
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => { el.style.display = 'none'; }, ms);
+  }
+
+  // ─── RENDER ────────────────────────────────────────────────────────────────
+  function render() {
+    const n = teamNames();
+
+    // Inning text + arrows
+    document.getElementById('inningText').textContent =
+      `${state.isTop ? 'TOP' : 'BOT'} — ${ordinal(state.inning)} INNING`;
+    document.getElementById('arrowUp').className =
+      'arrow-up'   + (state.isTop ? ' active' : '');
+    document.getElementById('arrowDown').className =
+      'arrow-down' + (state.isTop ? '' : ' active');
+
+    // Scoreboard
+    renderScoreboard(n);
+
+    // Base diamonds
+    const baseIds  = ['base1', 'base2', 'base3'];
+    state.bases.forEach((on, i) => {
+      document.getElementById(baseIds[i]).setAttribute('fill', on ? '#f5a623' : '#333');
+    });
+
+    // Count dots
+    makeDots('ballDots',   state.balls,   3, 'ball');
+    makeDots('strikeDots', state.strikes, 2, 'strike');
+    makeDots('outDots',    state.outs,    2, 'out');
+  }
+
+  function makeDots(id, count, max, type) {
+    const el = document.getElementById(id);
+    el.innerHTML = '';
+    for (let i = 0; i < max; i++) {
+      const d = document.createElement('div');
+      d.className = `dot dot-${type}` + (i < count ? ' lit' : '');
+      el.appendChild(d);
+    }
+  }
+
+  function renderScoreboard(n) {
+    const totalInn = Math.max(9, state.inning);
+    let html = '<thead><tr><th class="team-cell">Team</th>';
+    for (let i = 1; i <= totalInn; i++) html += `<th>${i}</th>`;
+    html += '<th class="runs-col">R</th></tr></thead><tbody>';
+
+    ['away', 'home'].forEach(team => {
+      const isBatting = battingTeam() === team;
+      html += `<tr><td class="team-cell${isBatting ? ' batting' : ''}">${n[team]}</td>`;
+      for (let i = 0; i < totalInn; i++) {
+        ensureInning(i);
+        const val = state.scorecard[i][team];
+        const isActive = i === state.inning - 1 &&
+          ((team === 'away' && state.isTop) || (team === 'home' && !state.isTop));
+        const display  = val !== null ? val : (isActive ? '—' : '');
+        html += `<td class="${isActive ? 'active-cell' : ''}">${display}</td>`;
+      }
+      html += `<td class="runs-col">${totalRuns(team)}</td></tr>`;
+    });
+
+    html += '</tbody>';
+    document.getElementById('scoreboard').innerHTML = html;
+  }
+
+  // ─── ACTIONS ───────────────────────────────────────────────────────────────
+  function doBall() {
+    state.balls++;
+    if (state.balls >= 4) {
+      state.balls   = 0;
+      state.strikes = 0;
+      showToast('Walk!');
+    }
+    render();
+  }
+
+  function doStrike() {
+    state.strikes++;
+    if (state.strikes >= 3) {
+      state.strikes = 0;
+      state.balls   = 0;
+      doOut();          // strikeout counts as an out
+      return;
+    }
+    render();
+  }
+
+  function doOut() {
+    if (state.outs >= 3) return;   // guard against double-tap
+    state.outs++;
+    state.balls   = 0;
+    state.strikes = 0;
+    render();
+    if (state.outs >= 3) {
+      showToast('3 Outs — Side retired!', 2200);
+      setTimeout(() => { advanceHalf(); render(); }, 1000);
+    }
+  }
+
+  function doRun() {
+    const team = battingTeam();
+    const idx  = state.inning - 1;
+    ensureInning(idx);
+    if (state.scorecard[idx][team] === null) state.scorecard[idx][team] = 0;
+    state.scorecard[idx][team]++;
+    render();
+  }
+
+  function undoRun() {
+    const team = battingTeam();
+    const idx  = state.inning - 1;
+    ensureInning(idx);
+    if (state.scorecard[idx][team] > 0) {
+      state.scorecard[idx][team]--;
+      render();
+    }
+  }
+
+  function resetCount() {
+    state.balls   = 0;
+    state.strikes = 0;
+    render();
+  }
+
+  function toggleBase(i) {
+    state.bases[i] = !state.bases[i];
+    render();
+  }
+
+  // Advance to the next half-inning (also finalises current half's score as 0 if null)
+  function advanceHalf() {
+    const idx  = state.inning - 1;
+    const team = battingTeam();
+    ensureInning(idx);
+    if (state.scorecard[idx][team] === null) state.scorecard[idx][team] = 0;
+
+    if (state.isTop) {
+      state.isTop = false;
+    } else {
+      state.isTop = true;
+      state.inning++;
+      ensureInning(state.inning - 1);
+    }
+    state.outs    = 0;
+    state.balls   = 0;
+    state.strikes = 0;
+    state.bases   = [false, false, false];
+  }
+
+  function nextHalf() {
+    advanceHalf();
+    render();
+  }
+
+  function newGame() {
+    if (!confirm('Start a new game? All scores will be reset.')) return;
+    state = freshState();
+    render();
+  }
+
+  // ─── INIT ──────────────────────────────────────────────────────────────────
+  document.getElementById('awayInput').addEventListener('input', render);
+  document.getElementById('homeInput').addEventListener('input', render);
+
+  render();
+</script>
+</body>
+</html>
