@@ -425,13 +425,39 @@
 
     .history-entry {
       display: flex;
-      align-items: center;
-      gap: 10px;
-      padding: 12px 14px;
+      flex-direction: column;
       background: #fff;
       border: 1px solid #f3f4f6;
       border-radius: 12px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+
+    .history-entry-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 14px;
+      cursor: pointer;
+    }
+
+    .history-entry-header:active { background: #f9fafb; }
+
+    .history-expand {
+      background: transparent;
+      border: none;
+      color: #9ca3af;
+      font-size: 0.75rem;
+      padding: 2px 4px;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .history-stats {
+      border-top: 1px solid #f3f4f6;
+      padding: 12px 14px;
+      flex-direction: column;
+      gap: 14px;
     }
 
     .history-date {
@@ -1064,7 +1090,7 @@
 
 <!-- Save / New game -->
 <div class="bottom-row">
-  <button class="btn-save-game" onclick="doSaveGame()">Save Game</button>
+  <button class="btn-save-game" onclick="doSaveGame()">End Game</button>
   <button class="btn-new-game"  onclick="newGame()">New Game</button>
 </div>
 
@@ -1848,7 +1874,11 @@
       home:      n.home,
       awayRuns:  totalRuns('away'),
       homeRuns:  totalRuns('home'),
-      scorecard: state.scorecard.map(inn => ({...inn}))
+      scorecard: state.scorecard.map(inn => ({...inn})),
+      lineup:    {
+        away: (state.lineup.away || []).map(p => ({...p})),
+        home: (state.lineup.home || []).map(p => ({...p}))
+      }
     };
     const history = getHistory();
     history.unshift(entry);
@@ -1864,6 +1894,43 @@
     renderHistory();
   }
 
+  function buildHistoryStatsHTML(e) {
+    const lu = e.lineup;
+    if (!lu) return '<div class="history-empty" style="padding:6px 0">No player stats saved for this game.</div>';
+    let html = '';
+    ['away', 'home'].forEach(team => {
+      const players = lu[team];
+      if (!players || players.length === 0) return;
+      const teamName = team === 'away' ? e.away : e.home;
+      html += `<div>
+        <div class="lineup-stats-team">${teamName}</div>
+        <table class="lineup-stats-table">
+          <thead><tr>
+            <th>#</th><th class="lss-name">Name</th>
+            <th>AB</th><th>H</th><th>AVG</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th>
+          </tr></thead><tbody>`;
+      players.forEach((p, i) => {
+        const ab = p.ab||0, h = p.h||0, hr = p.hr||0, r = p.r||0, rbi = p.rbi||0, bb = p.bb||0, k = p.k||0;
+        const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '—';
+        html += `<tr>
+          <td>${i+1}</td><td class="lss-name">${p.name || `Player ${i+1}`}</td>
+          <td>${ab}</td><td>${h}</td><td>${avg}</td>
+          <td>${hr}</td><td>${r}</td><td>${rbi}</td><td>${bb}</td><td>${k}</td>
+        </tr>`;
+      });
+      html += `</tbody></table></div>`;
+    });
+    return html || '<div class="history-empty" style="padding:6px 0">No player stats saved for this game.</div>';
+  }
+
+  function toggleHistoryStats(id) {
+    const stats = document.getElementById('hs-' + id);
+    const btn   = document.getElementById('hx-' + id);
+    const isOpen = stats.style.display !== 'none';
+    stats.style.display = isOpen ? 'none' : 'flex';
+    btn.textContent = isOpen ? '▼' : '▲';
+  }
+
   function renderHistory() {
     const history = getHistory();
     const list    = document.getElementById('historyList');
@@ -1876,13 +1943,19 @@
       const homeClass = e.homeRuns > e.awayRuns ? ' winner' : '';
       return `
         <div class="history-entry">
-          <div class="history-date">${e.date}</div>
-          <div class="history-score">
-            <span class="${awayClass}">${e.away} ${e.awayRuns}</span>
-            <span class="sep">–</span>
-            <span class="${homeClass}">${e.homeRuns} ${e.home}</span>
+          <div class="history-entry-header" onclick="toggleHistoryStats(${e.id})">
+            <div class="history-date">${e.date}</div>
+            <div class="history-score">
+              <span class="${awayClass}">${e.away} ${e.awayRuns}</span>
+              <span class="sep">–</span>
+              <span class="${homeClass}">${e.homeRuns} ${e.home}</span>
+            </div>
+            <button class="history-expand" id="hx-${e.id}">▼</button>
+            <button class="history-delete" onclick="event.stopPropagation(); deleteHistoryEntry(${e.id})">✕</button>
           </div>
-          <button class="history-delete" onclick="deleteHistoryEntry(${e.id})">✕</button>
+          <div class="history-stats" id="hs-${e.id}" style="display:none">
+            ${buildHistoryStatsHTML(e)}
+          </div>
         </div>`;
     }).join('');
   }
