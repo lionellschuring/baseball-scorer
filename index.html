@@ -633,6 +633,38 @@
 
     .player-remove:active { color: #9ca3af; }
 
+    .drag-handle {
+      color: #d1d5db;
+      font-size: 1.1rem;
+      cursor: grab;
+      padding: 0 2px;
+      line-height: 1;
+      flex-shrink: 0;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .drag-handle:active { cursor: grabbing; }
+
+    .player-row.is-dragging { opacity: 0.25; }
+
+    .player-row.drop-above { border-top: 2px solid #dc2626; }
+
+    .drag-mirror {
+      position: fixed;
+      pointer-events: none;
+      z-index: 9999;
+      opacity: 0.9;
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 10px;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.15);
+      padding: 8px 10px;
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
     /* ── TOAST ── */
     #toast {
       position: fixed;
@@ -1112,6 +1144,7 @@
         `<option${p.pos === pos ? ' selected' : ''}>${escAttr(pos)}</option>`
       ).join('');
       return `<div class="player-row" data-idx="${i}">
+        <span class="drag-handle" title="Drag to reorder">⠿</span>
         <span class="player-num">${i + 1}.</span>
         <input class="player-name-input" value="${escAttr(p.name)}"
                placeholder="Player ${i + 1}" maxlength="20">
@@ -1119,6 +1152,7 @@
         <button class="player-remove" onclick="removePlayer('${team}',${i})" aria-label="Remove">×</button>
       </div>`;
     }).join('');
+    initDrag(team);
   }
 
   function addPlayer(team) {
@@ -1136,6 +1170,98 @@
     saveLineupInputs(team);
     setupLineup[team].splice(idx, 1);
     renderLineup(team);
+  }
+
+  // ─── DRAG-TO-REORDER ───────────────────────────────────────────────────────
+  function initDrag(team) {
+    const list = document.getElementById('lineup-' + team);
+    if (!list) return;
+
+    list.querySelectorAll('.drag-handle').forEach((handle, idx) => {
+      handle.addEventListener('mousedown',  (e) => startDrag(e, team, idx, e.clientY));
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startDrag(e, team, idx, e.touches[0].clientY);
+      }, { passive: false });
+    });
+  }
+
+  function startDrag(e, team, fromIdx, startClientY) {
+    saveLineupInputs(team);
+    const list    = document.getElementById('lineup-' + team);
+    const rows    = [...list.querySelectorAll('.player-row')];
+    const srcRow  = rows[fromIdx];
+    const srcRect = srcRow.getBoundingClientRect();
+
+    // Build a lightweight mirror element
+    const mirror = document.createElement('div');
+    mirror.className   = 'drag-mirror';
+    mirror.style.width = srcRect.width + 'px';
+    mirror.style.top   = srcRect.top  + 'px';
+    mirror.style.left  = srcRect.left + 'px';
+    mirror.innerHTML   = srcRow.innerHTML;
+    document.body.appendChild(mirror);
+
+    srcRow.classList.add('is-dragging');
+
+    let lastClientY = startClientY;
+
+    function getDropIdx(clientY) {
+      // Returns the index (0-based) BEFORE which to insert the dragged item.
+      // Iterates ALL rows (including ghost) to keep positions stable.
+      const allRows = [...list.querySelectorAll('.player-row')];
+      for (let i = 0; i < allRows.length; i++) {
+        const r = allRows[i].getBoundingClientRect();
+        if (clientY < r.top + r.height * 0.5) return i;
+      }
+      return allRows.length;
+    }
+
+    function onMove(clientY) {
+      const dy = clientY - lastClientY;
+      mirror.style.top = (parseFloat(mirror.style.top) + dy) + 'px';
+      lastClientY = clientY;
+
+      const dropIdx = getDropIdx(clientY);
+      list.querySelectorAll('.player-row').forEach((r, i) => {
+        r.classList.toggle('drop-above', i === dropIdx && i !== fromIdx);
+      });
+    }
+
+    function onEnd(clientY) {
+      mirror.remove();
+      const allRows = [...list.querySelectorAll('.player-row')];
+      allRows.forEach(r => r.classList.remove('is-dragging', 'drop-above'));
+
+      let dropIdx = getDropIdx(clientY);
+      // Adjust: after removing fromIdx, insertion point shifts if dropIdx > fromIdx
+      if (dropIdx !== fromIdx && dropIdx !== fromIdx + 1) {
+        const item = setupLineup[team].splice(fromIdx, 1)[0];
+        const insertAt = dropIdx > fromIdx ? dropIdx - 1 : dropIdx;
+        setupLineup[team].splice(insertAt, 0, item);
+        renderLineup(team);
+      }
+    }
+
+    // Mouse events (desktop)
+    function onMouseMove(e) { onMove(e.clientY); }
+    function onMouseUp(e)   { onEnd(e.clientY); cleanup(); }
+
+    // Touch events (mobile)
+    function onTouchMove(e) { e.preventDefault(); onMove(e.touches[0].clientY); }
+    function onTouchEnd(e)  { onEnd(e.changedTouches[0].clientY); cleanup(); }
+
+    function cleanup() {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup',   onMouseUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend',  onTouchEnd);
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup',   onMouseUp);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend',  onTouchEnd);
   }
 
   // ─── AUTO-SAVE ─────────────────────────────────────────────────────────────
