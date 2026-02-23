@@ -316,8 +316,13 @@
 
     .btn-new-game:active { color: #888; border-color: #555; }
 
+    .history-header {
+      display: flex;
+      gap: 6px;
+    }
+
     .history-toggle-btn {
-      width: 100%;
+      flex: 1;
       padding: 10px 12px;
       background: #161616;
       border: 1px solid #2a2a2a;
@@ -330,6 +335,20 @@
     }
 
     .history-toggle-btn:active { filter: brightness(1.4); }
+
+    .btn-transfer {
+      padding: 10px 12px;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      color: #555;
+      font-family: inherit;
+      font-size: 0.75rem;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .btn-transfer:active { filter: brightness(1.4); }
 
     #historyList {
       display: none;
@@ -525,9 +544,11 @@
 </div>
 
 <!-- History -->
-<button class="history-toggle-btn" id="historyToggle" onclick="toggleHistory()">
-  Past Games ▼
-</button>
+<div class="history-header">
+  <button class="history-toggle-btn" id="historyToggle" onclick="toggleHistory()">Past Games ▼</button>
+  <button class="btn-transfer" onclick="exportHistory()">Export ↓</button>
+  <button class="btn-transfer" onclick="importHistory()">Import ↑</button>
+</div>
 <div id="historyList"></div>
 
 <script>
@@ -831,6 +852,53 @@
           <button class="history-delete" onclick="deleteHistoryEntry(${e.id})">✕</button>
         </div>`;
     }).join('');
+  }
+
+  // ─── EXPORT / IMPORT ───────────────────────────────────────────────────────
+  function exportHistory() {
+    const history = getHistory();
+    if (history.length === 0) { showToast('No saved games to export'); return; }
+    const blob = new Blob(
+      [JSON.stringify({bb_history: history}, null, 2)],
+      {type: 'application/json'}
+    );
+    const url = URL.createObjectURL(blob);
+    const a   = document.createElement('a');
+    a.href     = url;
+    a.download = 'baseball-history.json';
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function importHistory() {
+    const input    = document.createElement('input');
+    input.type     = 'file';
+    input.accept   = '.json';
+    input.onchange = e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = evt => {
+        try {
+          const data = JSON.parse(evt.target.result);
+          if (!Array.isArray(data.bb_history)) { showToast('Invalid file'); return; }
+          // Merge imported + existing, deduplicate by id, sort newest first
+          const merged = [...data.bb_history, ...getHistory()];
+          const seen   = new Set();
+          const deduped = merged.filter(e => {
+            if (seen.has(e.id)) return false;
+            seen.add(e.id);
+            return true;
+          }).sort((a, b) => b.id - a.id);
+          localStorage.setItem('bb_history', JSON.stringify(deduped));
+          showToast(`Imported ${data.bb_history.length} game(s)!`);
+          renderHistory();
+          if (!historyOpen) toggleHistory();
+        } catch(err) { showToast('Could not read file'); }
+      };
+      reader.readAsText(file);
+    };
+    input.click();
   }
 
   let historyOpen = false;
