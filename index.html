@@ -453,6 +453,68 @@
       border-radius: 12px;
     }
 
+    /* ── ACTION SHEET ── */
+    #actionSheet {
+      position: fixed;
+      inset: 0;
+      z-index: 200;
+      display: none;
+    }
+
+    .as-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(0,0,0,0.35);
+    }
+
+    .as-panel {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      background: #fff;
+      border-radius: 20px 20px 0 0;
+      padding: 20px 16px 40px;
+    }
+
+    .as-title {
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #9ca3af;
+      text-align: center;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 14px;
+    }
+
+    .as-buttons {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .as-btn {
+      width: 100%;
+      padding: 15px;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.95rem;
+      font-weight: 600;
+      font-family: inherit;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .as-btn:active { filter: brightness(0.92); }
+    .as-btn-advance { background: #eff6ff; color: #2563eb; }
+    .as-btn-score   { background: #f0fdf4; color: #16a34a; }
+    .as-btn-out     { background: #fef2f2; color: #dc2626; }
+    .as-btn-hit     { background: #fffbeb; color: #d97706; }
+    .as-btn-hr      { background: #fdf4ff; color: #9333ea; }
+    .as-btn-cancel  { background: #f9fafb; color: #9ca3af; margin-top: 4px; }
+
     /* ── BATTER CARD ── */
     .batter-row {
       display: flex;
@@ -890,20 +952,20 @@
         <!-- 2nd base -->
         <rect id="base2" x="87" y="7" width="26" height="22" rx="3"
               fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"
-              style="cursor:pointer" onclick="toggleBase(1)"/>
-        <text x="100" y="21" fill="#6b7280" font-size="11"
+              style="cursor:pointer" onclick="clickBase(1)"/>
+        <text id="baseLabel2" x="100" y="21" fill="#6b7280" font-size="11"
               text-anchor="middle" dominant-baseline="middle" pointer-events="none">2</text>
         <!-- 1st base -->
         <rect id="base1" x="163" y="88" width="26" height="24" rx="3"
               fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"
-              style="cursor:pointer" onclick="toggleBase(0)"/>
-        <text x="176" y="101" fill="#6b7280" font-size="11"
+              style="cursor:pointer" onclick="clickBase(0)"/>
+        <text id="baseLabel1" x="176" y="101" fill="#6b7280" font-size="11"
               text-anchor="middle" dominant-baseline="middle" pointer-events="none">1</text>
         <!-- 3rd base -->
         <rect id="base3" x="11" y="88" width="26" height="24" rx="3"
               fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"
-              style="cursor:pointer" onclick="toggleBase(2)"/>
-        <text x="24" y="101" fill="#6b7280" font-size="11"
+              style="cursor:pointer" onclick="clickBase(2)"/>
+        <text id="baseLabel3" x="24" y="101" fill="#6b7280" font-size="11"
               text-anchor="middle" dominant-baseline="middle" pointer-events="none">3</text>
       </svg>
     </div>
@@ -989,6 +1051,15 @@
 
 </div><!-- /mainScreen -->
 
+<!-- Action sheet (base runner actions + hit type picker) -->
+<div id="actionSheet">
+  <div class="as-overlay" onclick="closeActionSheet()"></div>
+  <div class="as-panel">
+    <div class="as-title" id="asTitle"></div>
+    <div class="as-buttons" id="asButtons"></div>
+  </div>
+</div>
+
 <script>
   // ─── STATE ─────────────────────────────────────────────────────────────────
   let state = freshState();
@@ -1000,7 +1071,7 @@
       balls:     0,
       strikes:   0,
       outs:      0,
-      bases:     [false, false, false],
+      bases:     [null, null, null],
       pitches:   0,
       scorecard: Array.from({length: 9}, () => ({away: null, home: null})),
       lineup:    { away: [], home: [] },
@@ -1068,10 +1139,7 @@
     renderScoreboard(n);
 
     // Bases
-    const baseIds = ['base1', 'base2', 'base3'];
-    state.bases.forEach((on, i) => {
-      document.getElementById(baseIds[i]).setAttribute('fill', on ? '#f59e0b' : '#e5e7eb');
-    });
+    renderBases();
 
     // Pitch count
     document.getElementById('pitchCount').textContent = state.pitches;
@@ -1193,10 +1261,16 @@
     state.balls++;
     if (state.balls >= 4) {
       recordStat('bb');
+      const batter = makeBatterRunner();
       advanceBatter();
+      const runScored = (() => {
+        const hadLoaded = state.bases[0] && state.bases[1] && state.bases[2];
+        applyWalk(batter);
+        return hadLoaded;
+      })();
       state.balls   = 0;
       state.strikes = 0;
-      showToast('Walk!');
+      showToast(runScored ? 'Walk — run scores!' : 'Walk!');
     }
     render();
   }
@@ -1229,9 +1303,35 @@
   }
 
   function doHit() {
+    // Show hit-type picker; stats + placement happen after selection
+    showActionSheet('Hit Type', [
+      { label: 'Single  (1B)', cls: 'as-btn-hit', fn: () => applyHit(0) },
+      { label: 'Double  (2B)', cls: 'as-btn-hit', fn: () => applyHit(1) },
+      { label: 'Triple  (3B)', cls: 'as-btn-hit', fn: () => applyHit(2) },
+      { label: '⭐ Home Run',  cls: 'as-btn-hr',  fn: () => applyHit(3) },
+      { label: 'Cancel',       cls: 'as-btn-cancel', fn() {} }
+    ]);
+  }
+
+  function applyHit(baseIdx) {
+    // baseIdx 0-2 = 1st/2nd/3rd, 3 = HR
     state.pitches++;
     recordStat('h');
-    advanceBatter();
+    if (baseIdx === 3) {
+      // Home run: score all runners then the batter
+      for (let i = 2; i >= 0; i--) { if (state.bases[i]) scoreRunner(i); }
+      const team = battingTeam();
+      const inn  = state.inning - 1;
+      ensureInning(inn);
+      if (state.scorecard[inn][team] === null) state.scorecard[inn][team] = 0;
+      state.scorecard[inn][team]++;
+      advanceBatter();
+      showToast('Home Run! 🎉', 2200);
+    } else {
+      const runner = makeBatterRunner();
+      advanceBatter();
+      state.bases[baseIdx] = runner;
+    }
     state.balls   = 0;
     state.strikes = 0;
     render();
@@ -1267,9 +1367,127 @@
     render();
   }
 
-  function toggleBase(i) {
-    state.bases[i] = !state.bases[i];
-    render();
+  // ─── BASE RUNNER TRACKING ──────────────────────────────────────────────────
+  function makeBatterRunner() {
+    const team = battingTeam();
+    const idx  = state.batterIdx[team];
+    const p    = currentBatterPlayer();
+    return {
+      team,
+      idx,
+      name:     p ? (p.name || `Player ${idx + 1}`) : `#${idx + 1}`,
+      orderNum: idx + 1
+    };
+  }
+
+  function renderBases() {
+    const rects  = ['base1',      'base2',      'base3'     ];
+    const labels = ['baseLabel1', 'baseLabel2', 'baseLabel3'];
+    const defLbl = ['1', '2', '3'];
+    state.bases.forEach((runner, i) => {
+      document.getElementById(rects[i])
+        .setAttribute('fill', runner ? '#f59e0b' : '#e5e7eb');
+      const lbl = document.getElementById(labels[i]);
+      if (runner) {
+        lbl.textContent = runner.orderNum || '?';
+        lbl.setAttribute('fill', '#fff');
+        lbl.setAttribute('font-weight', '700');
+      } else {
+        lbl.textContent = defLbl[i];
+        lbl.setAttribute('fill', '#6b7280');
+        lbl.setAttribute('font-weight', 'normal');
+      }
+    });
+  }
+
+  function scoreRunner(baseIdx) {
+    const runner = state.bases[baseIdx];
+    if (!runner) return;
+    state.bases[baseIdx] = null;
+    const team = runner.team || battingTeam();
+    const idx  = state.inning - 1;
+    ensureInning(idx);
+    if (state.scorecard[idx][team] === null) state.scorecard[idx][team] = 0;
+    state.scorecard[idx][team]++;
+  }
+
+  function applyWalk(batter) {
+    // Force-advance runners only when their base is occupied by a forced runner chain
+    if (state.bases[0]) {
+      if (state.bases[1]) {
+        if (state.bases[2]) {
+          scoreRunner(2); // bases loaded: runner on 3rd scores
+        }
+        state.bases[2] = state.bases[1];
+      }
+      state.bases[1] = state.bases[0];
+    }
+    state.bases[0] = batter;
+  }
+
+  function clickBase(baseIdx) {
+    const runner = state.bases[baseIdx];
+    if (!runner) return; // nothing to do on an empty base
+
+    const baseNames = ['1st Base', '2nd Base', '3rd Base'];
+    const nextNames = ['2nd Base', '3rd Base', 'Home'];
+    const label     = runner.name || `#${runner.orderNum}`;
+
+    showActionSheet(`${label} — ${baseNames[baseIdx]}`, [
+      ...(baseIdx < 2 ? [{
+        label: `→ Advance to ${nextNames[baseIdx]}`,
+        cls: 'as-btn-advance',
+        fn() {
+          state.bases[baseIdx + 1] = runner;
+          state.bases[baseIdx]     = null;
+          render();
+        }
+      }] : []),
+      {
+        label: '🏠 Score!',
+        cls: 'as-btn-score',
+        fn() {
+          const name = runner.name || `#${runner.orderNum}`;
+          scoreRunner(baseIdx);
+          showToast(`${name} scored!`);
+          render();
+        }
+      },
+      {
+        label: '✕ Out on bases',
+        cls: 'as-btn-out',
+        fn() {
+          state.bases[baseIdx] = null;
+          // Base-running out: don't advance batter, don't reset count
+          state.outs++;
+          render();
+          if (state.outs >= 3) {
+            showToast('3 Outs — Side retired!', 2200);
+            setTimeout(() => { advanceHalf(); render(); }, 1000);
+          }
+        }
+      },
+      { label: 'Cancel', cls: 'as-btn-cancel', fn() {} }
+    ]);
+  }
+
+  // ─── ACTION SHEET ──────────────────────────────────────────────────────────
+  function showActionSheet(title, buttons) {
+    document.getElementById('asTitle').textContent = title;
+    const container = document.getElementById('asButtons');
+    container.innerHTML = '';
+    buttons.forEach(b => {
+      const btn = document.createElement('button');
+      btn.className   = 'as-btn ' + (b.cls || '');
+      btn.textContent = b.label;
+      btn.addEventListener('click', () => { closeActionSheet(); b.fn(); });
+      container.appendChild(btn);
+    });
+    document.getElementById('actionSheet').style.display = '';
+  }
+
+  function closeActionSheet() {
+    document.getElementById('actionSheet').style.display = 'none';
   }
 
   function advanceHalf() {
@@ -1289,7 +1507,7 @@
     state.balls   = 0;
     state.strikes = 0;
     state.pitches = 0;
-    state.bases   = [false, false, false];
+    state.bases   = [null, null, null];
   }
 
   function nextHalf() {
@@ -1510,6 +1728,11 @@
         state = saved.state;
         if (!state.lineup)    state.lineup    = { away: [], home: [] };
         if (!state.batterIdx) state.batterIdx = { away: 0, home: 0 };
+        // Migrate old boolean bases to runner objects
+        state.bases = (state.bases || [null,null,null]).map(b => {
+          if (!b || typeof b === 'boolean') return null;
+          return b; // already a runner object
+        });
         // Ensure stat fields exist on all players (backwards compat)
         ['away', 'home'].forEach(team => {
           (state.lineup[team] || []).forEach(p => {
