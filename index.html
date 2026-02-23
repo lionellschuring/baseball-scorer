@@ -1029,6 +1029,12 @@
   <button class="btn-sm" onclick="nextHalf()">Next Half ▶</button>
 </div>
 
+<!-- Lineup Stats -->
+<div class="history-header">
+  <button class="history-toggle-btn" id="lineupStatsToggle" onclick="toggleLineupStats()">Lineup Stats ▼</button>
+</div>
+<div id="lineupStatsList" style="display:none; flex-direction:column; gap:6px;"></div>
+
 <!-- Save / New game -->
 <div class="bottom-row">
   <button class="btn-save-game" onclick="doSaveGame()">Save Game</button>
@@ -1042,12 +1048,6 @@
   <button class="btn-transfer" onclick="importHistory()">Import ↑</button>
 </div>
 <div id="historyList"></div>
-
-<!-- Lineup Stats -->
-<div class="history-header">
-  <button class="history-toggle-btn" id="lineupStatsToggle" onclick="toggleLineupStats()">Lineup Stats ▼</button>
-</div>
-<div id="lineupStatsList" style="display:none; flex-direction:column; gap:6px;"></div>
 
 </div><!-- /mainScreen -->
 
