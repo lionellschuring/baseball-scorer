@@ -1100,8 +1100,9 @@
       bases:     [null, null, null],
       pitches:   0,
       scorecard: Array.from({length: 9}, () => ({away: null, home: null})),
-      lineup:    { away: [], home: [] },
-      batterIdx: { away: 0, home: 0 }
+      lineup:     { away: [], home: [] },
+      batterIdx:  { away: 0, home: 0 },
+      lastBatter: { away: null, home: null }
     };
   }
 
@@ -1232,14 +1233,27 @@
   }
 
   function recordStat(result) {
-    // result: 'out' | 'k' | 'bb' | 'h'
-    const team = battingTeam();
-    const p    = currentBatterPlayer();
+    // result: 'out' | 'k' | 'bb' | 'h' | 'hr'
+    const p = currentBatterPlayer();
     if (!p) return;
-    if (result !== 'bb') p.ab = (p.ab || 0) + 1; // BB doesn't count as AB
-    if (result === 'k')  p.k  = (p.k  || 0) + 1;
-    if (result === 'bb') p.bb = (p.bb || 0) + 1;
-    if (result === 'h')  p.h  = (p.h  || 0) + 1;
+    if (result !== 'bb')             p.ab = (p.ab || 0) + 1;
+    if (result === 'k')              p.k  = (p.k  || 0) + 1;
+    if (result === 'bb')             p.bb = (p.bb || 0) + 1;
+    if (result === 'h' || result === 'hr') p.h = (p.h || 0) + 1;
+    if (result === 'hr')             p.hr = (p.hr || 0) + 1;
+  }
+
+  function setLastBatter(team) {
+    const idx = state.batterIdx[team];
+    const p   = state.lineup[team] && state.lineup[team][idx];
+    state.lastBatter[team] = { idx, name: p ? (p.name || `Player ${idx + 1}`) : `#${idx + 1}` };
+  }
+
+  function creditRbi(team) {
+    const lb = state.lastBatter[team];
+    if (!lb) return;
+    const p = state.lineup[team] && state.lineup[team][lb.idx];
+    if (p) p.rbi = (p.rbi || 0) + 1;
   }
 
   function renderBatterCard() {
@@ -1258,11 +1272,15 @@
     posBadge.textContent = (p.pos && p.pos !== '—') ? p.pos : '';
     posBadge.style.display = posBadge.textContent ? '' : 'none';
 
-    const ab = p.ab || 0, h = p.h || 0, bb = p.bb || 0, k = p.k || 0;
-    let s = `${h}-for-${ab}`;
-    if (bb) s += ` · ${bb}BB`;
-    if (k)  s += ` · ${k}K`;
-    document.getElementById('batterStats').textContent = s;
+    const ab = p.ab||0, h = p.h||0, hr = p.hr||0, r = p.r||0, rbi = p.rbi||0, bb = p.bb||0, k = p.k||0;
+    const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '.000';
+    let parts = [`${h}-for-${ab}`, avg];
+    if (hr)  parts.push(`${hr}HR`);
+    if (r)   parts.push(`${r}R`);
+    if (rbi) parts.push(`${rbi}RBI`);
+    if (bb)  parts.push(`${bb}BB`);
+    if (k)   parts.push(`${k}K`);
+    document.getElementById('batterStats').textContent = parts.join(' · ');
   }
 
   function manualPrevBatter() {
@@ -1287,16 +1305,16 @@
     state.balls++;
     if (state.balls >= 4) {
       recordStat('bb');
+      const team   = battingTeam();
       const batter = makeBatterRunner();
+      const wasLoaded = state.bases[0] && state.bases[1] && state.bases[2];
+      setLastBatter(team);
       advanceBatter();
-      const runScored = (() => {
-        const hadLoaded = state.bases[0] && state.bases[1] && state.bases[2];
-        applyWalk(batter);
-        return hadLoaded;
-      })();
+      applyWalk(batter);
+      if (wasLoaded) creditRbi(team); // forced run on bases-loaded walk → RBI
       state.balls   = 0;
       state.strikes = 0;
-      showToast(runScored ? 'Walk — run scores!' : 'Walk!');
+      showToast(wasLoaded ? 'Walk — run scores!' : 'Walk!');
     }
     render();
   }
@@ -1317,6 +1335,7 @@
     if (state.outs >= 3) return;
     if (!pitchCounted) state.pitches++;
     recordStat(isK ? 'k' : 'out');
+    setLastBatter(battingTeam());
     advanceBatter();
     state.outs++;
     state.balls   = 0;
@@ -1342,12 +1361,20 @@
   function applyHit(baseIdx) {
     // baseIdx 0-2 = 1st/2nd/3rd, 3 = HR
     state.pitches++;
-    recordStat('h');
+    recordStat(baseIdx === 3 ? 'hr' : 'h');
+    const team    = battingTeam();
+    const batterP = currentBatterPlayer(); // capture before advance
+    setLastBatter(team);
+
     if (baseIdx === 3) {
-      // Home run: score all runners then the batter
-      for (let i = 2; i >= 0; i--) { if (state.bases[i]) scoreRunner(i); }
-      const team = battingTeam();
-      const inn  = state.inning - 1;
+      // Score all runners (each gets R; each scores an RBI for the HR hitter)
+      for (let i = 2; i >= 0; i--) {
+        if (state.bases[i]) { scoreRunner(i); creditRbi(team); }
+      }
+      // Batter scores too
+      if (batterP) batterP.r = (batterP.r || 0) + 1;
+      creditRbi(team); // RBI for batter's own run
+      const inn = state.inning - 1;
       ensureInning(inn);
       if (state.scorecard[inn][team] === null) state.scorecard[inn][team] = 0;
       state.scorecard[inn][team]++;
@@ -1429,12 +1456,17 @@
   function scoreRunner(baseIdx) {
     const runner = state.bases[baseIdx];
     if (!runner) return;
+    // Track R for the runner's player
+    const rTeam   = runner.team || battingTeam();
+    const rLineup = state.lineup[rTeam];
+    if (rLineup && runner.idx !== undefined && rLineup[runner.idx]) {
+      rLineup[runner.idx].r = (rLineup[runner.idx].r || 0) + 1;
+    }
     state.bases[baseIdx] = null;
-    const team = runner.team || battingTeam();
-    const idx  = state.inning - 1;
-    ensureInning(idx);
-    if (state.scorecard[idx][team] === null) state.scorecard[idx][team] = 0;
-    state.scorecard[idx][team]++;
+    const inn = state.inning - 1;
+    ensureInning(inn);
+    if (state.scorecard[inn][rTeam] === null) state.scorecard[inn][rTeam] = 0;
+    state.scorecard[inn][rTeam]++;
   }
 
   function applyWalk(batter) {
@@ -1470,8 +1502,23 @@
         }
       }] : []),
       {
-        label: '🏠 Score!',
+        label: (() => {
+          const lb = state.lastBatter[runner.team || battingTeam()];
+          return `🏠 Score! + RBI → ${lb ? lb.name : '?'}`;
+        })(),
         cls: 'as-btn-score',
+        fn() {
+          const rTeam = runner.team || battingTeam();
+          const name  = runner.name || `#${runner.orderNum}`;
+          scoreRunner(baseIdx);
+          creditRbi(rTeam);
+          showToast(`${name} scored!`);
+          render();
+        }
+      },
+      {
+        label: '🏠 Score (no RBI)',
+        cls: 'as-btn-advance',
         fn() {
           const name = runner.name || `#${runner.orderNum}`;
           scoreRunner(baseIdx);
@@ -1578,8 +1625,8 @@
     state = freshState();
     // Deep copy lineup and add fresh stat counters
     state.lineup = {
-      away: setupLineup.away.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, bb:0, k:0 })),
-      home: setupLineup.home.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, bb:0, k:0 }))
+      away: setupLineup.away.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0 })),
+      home: setupLineup.home.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0 }))
     };
     document.getElementById('awayInput').value =
       document.getElementById('setupAwayInput').value.trim() || 'Away';
@@ -1759,13 +1806,17 @@
           if (!b || typeof b === 'boolean') return null;
           return b; // already a runner object
         });
+        if (!state.lastBatter) state.lastBatter = { away: null, home: null };
         // Ensure stat fields exist on all players (backwards compat)
         ['away', 'home'].forEach(team => {
           (state.lineup[team] || []).forEach(p => {
-            if (p.ab === undefined) p.ab = 0;
-            if (p.h  === undefined) p.h  = 0;
-            if (p.bb === undefined) p.bb = 0;
-            if (p.k  === undefined) p.k  = 0;
+            if (p.ab  === undefined) p.ab  = 0;
+            if (p.h   === undefined) p.h   = 0;
+            if (p.hr  === undefined) p.hr  = 0;
+            if (p.r   === undefined) p.r   = 0;
+            if (p.rbi === undefined) p.rbi = 0;
+            if (p.bb  === undefined) p.bb  = 0;
+            if (p.k   === undefined) p.k   = 0;
           });
         });
         document.getElementById('awayInput').value = saved.away || 'Away';
@@ -1911,18 +1962,22 @@
         <div class="lineup-stats-team">${n[team]}</div>
         <table class="lineup-stats-table">
           <thead><tr>
-            <th>#</th><th class="lss-name">Name</th><th>Pos</th>
-            <th>AB</th><th>H</th><th>BB</th><th>K</th>
+            <th>#</th><th class="lss-name">Name</th>
+            <th>AB</th><th>H</th><th>AVG</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th>
           </tr></thead><tbody>`;
 
       lineup.forEach((p, i) => {
         const isCur = (team === battingTeam() && i === curIdx);
+        const ab  = p.ab  || 0, h   = p.h   || 0;
+        const hr  = p.hr  || 0, r   = p.r   || 0;
+        const rbi = p.rbi || 0, bb  = p.bb  || 0, k = p.k || 0;
+        const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '—';
         html += `<tr class="${isCur ? 'lss-current' : ''}">
           <td>${i + 1}</td>
           <td class="lss-name">${p.name || `Player ${i+1}`}</td>
-          <td>${(p.pos && p.pos !== '—') ? p.pos : '—'}</td>
-          <td>${p.ab || 0}</td><td>${p.h || 0}</td>
-          <td>${p.bb || 0}</td><td>${p.k || 0}</td>
+          <td>${ab}</td><td>${h}</td><td>${avg}</td>
+          <td>${hr}</td><td>${r}</td><td>${rbi}</td>
+          <td>${bb}</td><td>${k}</td>
         </tr>`;
       });
 
