@@ -1996,51 +1996,169 @@
   }
 
   // ─── SHARE STATS ───────────────────────────────────────────────────────────
-  function buildStatsReport() {
-    const n = teamNames();
-    const awayScore = totalRuns('away');
-    const homeScore = totalRuns('home');
-    const inn = state.inning;
-    const half = state.isTop ? 'top' : 'bottom';
-    let lines = [];
+  function buildStatsCanvas() {
+    const scale = 2;
+    const W = 600;
+    const PAD = 16;
+    const HEADER_H = 90;
+    const TEAM_BAR_H = 36;
+    const COL_H = 28;
+    const ROW_H = 32;
+    const GAP = 16;
+    const FOOTER_H = 36;
 
-    lines.push('⚾ Baseball Game Report');
-    lines.push(`${n.away} ${awayScore}  –  ${homeScore} ${n.home}`);
-    lines.push(`Inning: ${half} of ${inn}`);
-    lines.push('');
+    const n = teamNames();
+    const awayRuns = totalRuns('away');
+    const homeRuns = totalRuns('home');
+
+    let H = HEADER_H + PAD;
+    ['away', 'home'].forEach(team => {
+      const l = state.lineup[team];
+      if (l && l.length) H += TEAM_BAR_H + COL_H + l.length * ROW_H + GAP;
+    });
+    H += FOOTER_H;
+
+    const canvas = document.createElement('canvas');
+    canvas.width = W * scale;
+    canvas.height = H * scale;
+    const ctx = canvas.getContext('2d');
+    ctx.scale(scale, scale);
+
+    // Background
+    ctx.fillStyle = '#f1f5f9';
+    ctx.fillRect(0, 0, W, H);
+
+    // Header bar
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(0, 0, W, HEADER_H);
+
+    ctx.textBaseline = 'middle';
+    ctx.textAlign = 'center';
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 26px system-ui, sans-serif';
+    ctx.fillText(`${n.away}  ${awayRuns} – ${homeRuns}  ${n.home}`, W / 2, 36);
+
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '14px system-ui, sans-serif';
+    const half = state.isTop ? 'Top' : 'Bot';
+    ctx.fillText(`${half} of ${state.inning}`, W / 2, 68);
+
+    // Column definitions
+    const colDefs = [
+      { key: 'num',  x: PAD + 12, align: 'center', label: '#'   },
+      { key: 'name', x: PAD + 28, align: 'left',   label: 'Name'},
+      { key: 'ab',   x: 248,      align: 'right',  label: 'AB'  },
+      { key: 'h',    x: 284,      align: 'right',  label: 'H'   },
+      { key: 'avg',  x: 332,      align: 'right',  label: 'AVG' },
+      { key: 'hr',   x: 368,      align: 'right',  label: 'HR'  },
+      { key: 'r',    x: 400,      align: 'right',  label: 'R'   },
+      { key: 'rbi',  x: 438,      align: 'right',  label: 'RBI' },
+      { key: 'bb',   x: 474,      align: 'right',  label: 'BB'  },
+      { key: 'k',    x: 504,      align: 'right',  label: 'K'   },
+    ];
+    const nameMaxW = 175;
+
+    let y = HEADER_H + PAD;
 
     ['away', 'home'].forEach(team => {
       const lineup = state.lineup[team];
       if (!lineup || lineup.length === 0) return;
-      lines.push(`── ${n[team]} ──`);
-      lines.push('# Name          AB  H  AVG   HR  R  RBI BB  K');
+
+      // Team name bar
+      ctx.fillStyle = team === 'away' ? '#dc2626' : '#2563eb';
+      ctx.fillRect(PAD, y, W - PAD * 2, TEAM_BAR_H);
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.textAlign = 'left';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(n[team].toUpperCase(), PAD + 12, y + TEAM_BAR_H / 2);
+      y += TEAM_BAR_H;
+
+      // Column headers
+      ctx.fillStyle = '#e2e8f0';
+      ctx.fillRect(PAD, y, W - PAD * 2, COL_H);
+      ctx.fillStyle = '#475569';
+      ctx.font = 'bold 11px system-ui, sans-serif';
+      ctx.textBaseline = 'middle';
+      colDefs.forEach(col => {
+        ctx.textAlign = col.align;
+        ctx.fillText(col.label, col.x, y + COL_H / 2);
+      });
+      y += COL_H;
+
+      // Player rows
       lineup.forEach((p, i) => {
         const ab  = p.ab  || 0, h   = p.h   || 0;
         const hr  = p.hr  || 0, r   = p.r   || 0;
         const rbi = p.rbi || 0, bb  = p.bb  || 0, k = p.k || 0;
-        const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '.---';
-        const name = (p.name || `Player ${i+1}`).padEnd(13).slice(0,13);
-        lines.push(
-          `${String(i+1).padStart(1)} ${name} ${String(ab).padStart(2)}  ${String(h).padStart(1)}  ${avg}  ${String(hr).padStart(2)}  ${String(r).padStart(1)}  ${String(rbi).padStart(2)}  ${String(bb).padStart(2)}  ${String(k).padStart(1)}`
-        );
+        const avg = ab ? '.' + String(Math.round(h / ab * 1000)).padStart(3, '0') : '.—';
+
+        ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+        ctx.fillRect(PAD, y, W - PAD * 2, ROW_H);
+
+        ctx.strokeStyle = '#e2e8f0';
+        ctx.lineWidth = 0.5;
+        ctx.beginPath();
+        ctx.moveTo(PAD, y + ROW_H);
+        ctx.lineTo(W - PAD, y + ROW_H);
+        ctx.stroke();
+
+        ctx.fillStyle = '#111827';
+        ctx.font = '13px system-ui, sans-serif';
+        ctx.textBaseline = 'middle';
+
+        const rowVals = { num: String(i + 1), name: p.name || `Player ${i+1}`,
+          ab: String(ab), h: String(h), avg, hr: String(hr),
+          r: String(r), rbi: String(rbi), bb: String(bb), k: String(k) };
+
+        colDefs.forEach(col => {
+          ctx.textAlign = col.align;
+          let val = rowVals[col.key];
+          if (col.key === 'name') {
+            while (ctx.measureText(val).width > nameMaxW && val.length > 1) val = val.slice(0, -1);
+            if (val !== rowVals.name) val += '…';
+          }
+          ctx.fillText(val, col.x, y + ROW_H / 2);
+        });
+
+        y += ROW_H;
       });
-      lines.push('');
+
+      y += GAP;
     });
 
-    return lines.join('\n');
+    // Footer
+    ctx.fillStyle = '#94a3b8';
+    ctx.font = '12px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('Baseball Scorer', W / 2, y + FOOTER_H / 2);
+
+    return canvas;
   }
 
   function shareStats() {
-    const text = buildStatsReport();
     const n = teamNames();
     const title = `${n.away} vs ${n.home} – Stats`;
-    if (navigator.share) {
-      navigator.share({ title, text }).catch(() => {});
-    } else {
-      const body = encodeURIComponent(text);
-      const subject = encodeURIComponent(title);
-      window.open(`mailto:?subject=${subject}&body=${body}`);
-    }
+    const canvas = buildStatsCanvas();
+    canvas.toBlob(async blob => {
+      const file = new File([blob], 'baseball-stats.png', { type: 'image/png' });
+      if (navigator.canShare && navigator.canShare({ files: [file] })) {
+        try {
+          await navigator.share({ files: [file], title });
+          return;
+        } catch (e) {
+          if (e.name === 'AbortError') return;
+        }
+      }
+      // Fallback: download the PNG
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'baseball-stats.png';
+      a.click();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    }, 'image/png');
   }
 
   // ─── INIT ──────────────────────────────────────────────────────────────────
