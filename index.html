@@ -1056,6 +1056,7 @@
 <!-- Lineup Stats -->
 <div class="history-header">
   <button class="history-toggle-btn" id="lineupStatsToggle" onclick="toggleLineupStats()">Lineup Stats ▼</button>
+  <button class="btn-transfer" onclick="shareStats()">Share ↗</button>
 </div>
 <div id="lineupStatsList" style="display:none; flex-direction:column; gap:6px;"></div>
 
@@ -1992,6 +1993,54 @@
     });
 
     el.innerHTML = html || '<div class="history-empty">No lineup set.</div>';
+  }
+
+  // ─── SHARE STATS ───────────────────────────────────────────────────────────
+  function buildStatsReport() {
+    const n = teamNames();
+    const awayScore = totalRuns('away');
+    const homeScore = totalRuns('home');
+    const inn = state.inning;
+    const half = state.isTop ? 'top' : 'bottom';
+    let lines = [];
+
+    lines.push('⚾ Baseball Game Report');
+    lines.push(`${n.away} ${awayScore}  –  ${homeScore} ${n.home}`);
+    lines.push(`Inning: ${half} of ${inn}`);
+    lines.push('');
+
+    ['away', 'home'].forEach(team => {
+      const lineup = state.lineup[team];
+      if (!lineup || lineup.length === 0) return;
+      lines.push(`── ${n[team]} ──`);
+      lines.push('# Name          AB  H  AVG   HR  R  RBI BB  K');
+      lineup.forEach((p, i) => {
+        const ab  = p.ab  || 0, h   = p.h   || 0;
+        const hr  = p.hr  || 0, r   = p.r   || 0;
+        const rbi = p.rbi || 0, bb  = p.bb  || 0, k = p.k || 0;
+        const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '.---';
+        const name = (p.name || `Player ${i+1}`).padEnd(13).slice(0,13);
+        lines.push(
+          `${String(i+1).padStart(1)} ${name} ${String(ab).padStart(2)}  ${String(h).padStart(1)}  ${avg}  ${String(hr).padStart(2)}  ${String(r).padStart(1)}  ${String(rbi).padStart(2)}  ${String(bb).padStart(2)}  ${String(k).padStart(1)}`
+        );
+      });
+      lines.push('');
+    });
+
+    return lines.join('\n');
+  }
+
+  function shareStats() {
+    const text = buildStatsReport();
+    const n = teamNames();
+    const title = `${n.away} vs ${n.home} – Stats`;
+    if (navigator.share) {
+      navigator.share({ title, text }).catch(() => {});
+    } else {
+      const body = encodeURIComponent(text);
+      const subject = encodeURIComponent(title);
+      window.open(`mailto:?subject=${subject}&body=${body}`);
+    }
   }
 
   // ─── INIT ──────────────────────────────────────────────────────────────────
