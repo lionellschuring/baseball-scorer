@@ -295,11 +295,12 @@
     .btn-strike { background: #dc2626; }
     .btn-out    { background: #7c3aed; }
     .btn-run    { background: #2563eb; }
+    .btn-hit    { background: #f59e0b; }
 
     /* ── SECONDARY ── */
     .secondary {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 6px;
     }
 
@@ -450,6 +451,120 @@
       background: #fff;
       border: 1px solid #f3f4f6;
       border-radius: 12px;
+    }
+
+    /* ── BATTER CARD ── */
+    .batter-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .batter-info {
+      flex: 1;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .batter-label {
+      font-size: 0.58rem;
+      font-weight: 700;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 1.2px;
+    }
+
+    .batter-main-line {
+      display: flex;
+      align-items: baseline;
+      justify-content: center;
+      gap: 5px;
+    }
+
+    .batter-order-num {
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #9ca3af;
+    }
+
+    .batter-name {
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .batter-pos-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #6b7280;
+      background: #f3f4f6;
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    .batter-stats-line {
+      font-size: 0.72rem;
+      color: #9ca3af;
+    }
+
+    .batter-nav {
+      background: #f9fafb;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      color: #9ca3af;
+      font-size: 0.75rem;
+      width: 34px;
+      height: 34px;
+      cursor: pointer;
+      font-family: inherit;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .batter-nav:active { background: #f3f4f6; }
+
+    /* ── LINEUP STATS ── */
+    .lineup-stats-team {
+      font-size: 0.7rem;
+      font-weight: 700;
+      color: #374151;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .lineup-stats-table {
+      width: 100%;
+      font-size: 0.76rem;
+      border-collapse: collapse;
+    }
+
+    .lineup-stats-table th {
+      color: #9ca3af;
+      font-weight: 500;
+      text-align: center;
+      padding: 4px 3px 6px;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .lineup-stats-table th.lss-name,
+    .lineup-stats-table td.lss-name {
+      text-align: left;
+      padding-left: 2px;
+    }
+
+    .lineup-stats-table td {
+      text-align: center;
+      padding: 5px 3px;
+    }
+
+    .lineup-stats-table tr + tr { border-top: 1px solid #f9fafb; }
+
+    .lss-current td {
+      color: #dc2626;
+      font-weight: 700;
     }
 
     /* ── SETUP SCREEN ── */
@@ -819,16 +934,34 @@
   </div>
 </div>
 
+<!-- Current batter -->
+<div class="card" id="batterCard" style="display:none; padding:12px 16px;">
+  <div class="batter-row">
+    <button class="batter-nav" onclick="manualPrevBatter()">◀</button>
+    <div class="batter-info">
+      <span class="batter-label">At Bat</span>
+      <div class="batter-main-line">
+        <span class="batter-order-num" id="batterOrderNum"></span>
+        <span class="batter-name" id="batterName"></span>
+        <span class="batter-pos-badge" id="batterPosBadge"></span>
+      </div>
+      <span class="batter-stats-line" id="batterStats"></span>
+    </div>
+    <button class="batter-nav" onclick="manualNextBatter()">▶</button>
+  </div>
+</div>
+
 <!-- Main action buttons -->
 <div class="actions">
   <button class="btn btn-ball"   onclick="doBall()">Ball</button>
   <button class="btn btn-strike" onclick="doStrike()">Strike</button>
   <button class="btn btn-out"    onclick="doOut()">Out</button>
-  <button class="btn btn-run"    onclick="doRun()">+ Run</button>
+  <button class="btn btn-hit"    onclick="doHit()">Hit</button>
 </div>
 
 <!-- Secondary controls -->
 <div class="secondary">
+  <button class="btn-sm" onclick="doRun()">+ Run</button>
   <button class="btn-sm" onclick="undoRun()">− Run</button>
   <button class="btn-sm" onclick="resetCount()">Reset Count</button>
   <button class="btn-sm" onclick="nextHalf()">Next Half ▶</button>
@@ -848,6 +981,12 @@
 </div>
 <div id="historyList"></div>
 
+<!-- Lineup Stats -->
+<div class="history-header">
+  <button class="history-toggle-btn" id="lineupStatsToggle" onclick="toggleLineupStats()">Lineup Stats ▼</button>
+</div>
+<div id="lineupStatsList" style="display:none; flex-direction:column; gap:6px;"></div>
+
 </div><!-- /mainScreen -->
 
 <script>
@@ -864,7 +1003,8 @@
       bases:     [false, false, false],
       pitches:   0,
       scorecard: Array.from({length: 9}, () => ({away: null, home: null})),
-      lineup:    { away: [], home: [] }
+      lineup:    { away: [], home: [] },
+      batterIdx: { away: 0, home: 0 }
     };
   }
 
@@ -940,6 +1080,12 @@
     makeDots('ballDots',   state.balls,   3, 'ball');
     makeDots('strikeDots', state.strikes, 2, 'strike');
     makeDots('outDots',    state.outs,    2, 'out');
+
+    // Current batter
+    renderBatterCard();
+
+    // Refresh lineup stats if open
+    if (lineupStatsOpen) renderLineupStats();
   }
 
   function makeDots(id, count, max, type) {
@@ -976,11 +1122,78 @@
     document.getElementById('scoreboard').innerHTML = html;
   }
 
+  // ─── BATTING ORDER ─────────────────────────────────────────────────────────
+  function currentBatterPlayer() {
+    const team   = battingTeam();
+    const lineup = state.lineup[team];
+    if (!lineup || lineup.length === 0) return null;
+    return lineup[state.batterIdx[team]];
+  }
+
+  function advanceBatter() {
+    const team   = battingTeam();
+    const lineup = state.lineup[team];
+    if (!lineup || lineup.length === 0) return;
+    state.batterIdx[team] = (state.batterIdx[team] + 1) % lineup.length;
+  }
+
+  function recordStat(result) {
+    // result: 'out' | 'k' | 'bb' | 'h'
+    const team = battingTeam();
+    const p    = currentBatterPlayer();
+    if (!p) return;
+    if (result !== 'bb') p.ab = (p.ab || 0) + 1; // BB doesn't count as AB
+    if (result === 'k')  p.k  = (p.k  || 0) + 1;
+    if (result === 'bb') p.bb = (p.bb || 0) + 1;
+    if (result === 'h')  p.h  = (p.h  || 0) + 1;
+  }
+
+  function renderBatterCard() {
+    const team   = battingTeam();
+    const lineup = state.lineup[team];
+    const card   = document.getElementById('batterCard');
+    if (!lineup || lineup.length === 0) { card.style.display = 'none'; return; }
+
+    card.style.display = '';
+    const idx = state.batterIdx[team];
+    const p   = lineup[idx];
+
+    document.getElementById('batterOrderNum').textContent = (idx + 1) + '.';
+    document.getElementById('batterName').textContent     = p.name || `Player ${idx + 1}`;
+    const posBadge = document.getElementById('batterPosBadge');
+    posBadge.textContent = (p.pos && p.pos !== '—') ? p.pos : '';
+    posBadge.style.display = posBadge.textContent ? '' : 'none';
+
+    const ab = p.ab || 0, h = p.h || 0, bb = p.bb || 0, k = p.k || 0;
+    let s = `${h}-for-${ab}`;
+    if (bb) s += ` · ${bb}BB`;
+    if (k)  s += ` · ${k}K`;
+    document.getElementById('batterStats').textContent = s;
+  }
+
+  function manualPrevBatter() {
+    const team   = battingTeam();
+    const lineup = state.lineup[team];
+    if (!lineup || lineup.length === 0) return;
+    state.batterIdx[team] = (state.batterIdx[team] - 1 + lineup.length) % lineup.length;
+    render();
+  }
+
+  function manualNextBatter() {
+    const team   = battingTeam();
+    const lineup = state.lineup[team];
+    if (!lineup || lineup.length === 0) return;
+    state.batterIdx[team] = (state.batterIdx[team] + 1) % lineup.length;
+    render();
+  }
+
   // ─── ACTIONS ───────────────────────────────────────────────────────────────
   function doBall() {
     state.pitches++;
     state.balls++;
     if (state.balls >= 4) {
+      recordStat('bb');
+      advanceBatter();
       state.balls   = 0;
       state.strikes = 0;
       showToast('Walk!');
@@ -994,15 +1207,17 @@
     if (state.strikes >= 3) {
       state.strikes = 0;
       state.balls   = 0;
-      doOut(true);
+      doOut(true, true); // pitchCounted, isK
       return;
     }
     render();
   }
 
-  function doOut(pitchCounted = false) {
+  function doOut(pitchCounted = false, isK = false) {
     if (state.outs >= 3) return;
     if (!pitchCounted) state.pitches++;
+    recordStat(isK ? 'k' : 'out');
+    advanceBatter();
     state.outs++;
     state.balls   = 0;
     state.strikes = 0;
@@ -1011,6 +1226,14 @@
       showToast('3 Outs — Side retired!', 2200);
       setTimeout(() => { advanceHalf(); render(); }, 1000);
     }
+  }
+
+  function doHit() {
+    recordStat('h');
+    advanceBatter();
+    state.balls   = 0;
+    state.strikes = 0;
+    render();
   }
 
   function doRun() {
@@ -1108,7 +1331,11 @@
     saveLineupInputs('away');
     saveLineupInputs('home');
     state = freshState();
-    state.lineup = JSON.parse(JSON.stringify(setupLineup));
+    // Deep copy lineup and add fresh stat counters
+    state.lineup = {
+      away: setupLineup.away.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, bb:0, k:0 })),
+      home: setupLineup.home.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, bb:0, k:0 }))
+    };
     document.getElementById('awayInput').value =
       document.getElementById('setupAwayInput').value.trim() || 'Away';
     document.getElementById('homeInput').value =
@@ -1280,7 +1507,17 @@
       const saved = JSON.parse(localStorage.getItem('bb_current'));
       if (saved && saved.state) {
         state = saved.state;
-        if (!state.lineup) state.lineup = { away: [], home: [] };
+        if (!state.lineup)    state.lineup    = { away: [], home: [] };
+        if (!state.batterIdx) state.batterIdx = { away: 0, home: 0 };
+        // Ensure stat fields exist on all players (backwards compat)
+        ['away', 'home'].forEach(team => {
+          (state.lineup[team] || []).forEach(p => {
+            if (p.ab === undefined) p.ab = 0;
+            if (p.h  === undefined) p.h  = 0;
+            if (p.bb === undefined) p.bb = 0;
+            if (p.k  === undefined) p.k  = 0;
+          });
+        });
         document.getElementById('awayInput').value = saved.away || 'Away';
         document.getElementById('homeInput').value = saved.home || 'Home';
       }
@@ -1396,6 +1633,53 @@
       reader.readAsText(file);
     };
     input.click();
+  }
+
+  // ─── LINEUP STATS ──────────────────────────────────────────────────────────
+  let lineupStatsOpen = false;
+
+  function toggleLineupStats() {
+    lineupStatsOpen = !lineupStatsOpen;
+    const el = document.getElementById('lineupStatsList');
+    el.style.display = lineupStatsOpen ? 'flex' : 'none';
+    document.getElementById('lineupStatsToggle').textContent =
+      lineupStatsOpen ? 'Lineup Stats ▲' : 'Lineup Stats ▼';
+    if (lineupStatsOpen) renderLineupStats();
+  }
+
+  function renderLineupStats() {
+    const n  = teamNames();
+    const el = document.getElementById('lineupStatsList');
+    let html = '';
+
+    ['away', 'home'].forEach(team => {
+      const lineup = state.lineup[team];
+      if (!lineup || lineup.length === 0) return;
+      const curIdx = state.batterIdx[team];
+
+      html += `<div class="card" style="padding:12px 14px;">
+        <div class="lineup-stats-team">${n[team]}</div>
+        <table class="lineup-stats-table">
+          <thead><tr>
+            <th>#</th><th class="lss-name">Name</th><th>Pos</th>
+            <th>AB</th><th>H</th><th>BB</th><th>K</th>
+          </tr></thead><tbody>`;
+
+      lineup.forEach((p, i) => {
+        const isCur = (team === battingTeam() && i === curIdx);
+        html += `<tr class="${isCur ? 'lss-current' : ''}">
+          <td>${i + 1}</td>
+          <td class="lss-name">${p.name || `Player ${i+1}`}</td>
+          <td>${(p.pos && p.pos !== '—') ? p.pos : '—'}</td>
+          <td>${p.ab || 0}</td><td>${p.h || 0}</td>
+          <td>${p.bb || 0}</td><td>${p.k || 0}</td>
+        </tr>`;
+      });
+
+      html += `</tbody></table></div>`;
+    });
+
+    el.innerHTML = html || '<div class="history-empty">No lineup set.</div>';
   }
 
   // ─── INIT ──────────────────────────────────────────────────────────────────
