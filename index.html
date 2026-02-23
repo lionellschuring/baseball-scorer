@@ -281,15 +281,30 @@
 
     .btn-sm:active { filter: brightness(0.7); }
 
-    /* ── NEW GAME ── */
-    .new-game-row {
+
+    /* ── SAVE / HISTORY ── */
+    .bottom-row {
       display: flex;
-      justify-content: center;
-      padding-bottom: 6px;
+      gap: 8px;
     }
 
+    .btn-save-game {
+      flex: 1;
+      padding: 10px;
+      background: transparent;
+      border: 1px solid #1b5e20;
+      border-radius: 6px;
+      color: #4caf50;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+    }
+
+    .btn-save-game:active { filter: brightness(0.7); }
+
     .btn-new-game {
-      padding: 10px 24px;
+      flex: 1;
+      padding: 10px;
       background: transparent;
       border: 1px solid #2a2a2a;
       border-radius: 6px;
@@ -300,6 +315,81 @@
     }
 
     .btn-new-game:active { color: #888; border-color: #555; }
+
+    .history-toggle-btn {
+      width: 100%;
+      padding: 10px 12px;
+      background: #161616;
+      border: 1px solid #2a2a2a;
+      border-radius: 6px;
+      color: #555;
+      font-family: inherit;
+      font-size: 0.8rem;
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .history-toggle-btn:active { filter: brightness(1.4); }
+
+    #historyList {
+      display: none;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding-bottom: 10px;
+    }
+
+    .history-entry {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: 1px solid #222;
+      border-radius: 6px;
+      background: #161616;
+    }
+
+    .history-date {
+      font-size: 0.7rem;
+      color: #555;
+      white-space: nowrap;
+      min-width: 68px;
+    }
+
+    .history-score {
+      flex: 1;
+      font-size: 0.88rem;
+      color: #aaa;
+      text-align: center;
+    }
+
+    .history-score .winner {
+      color: #f5a623;
+      font-weight: bold;
+    }
+
+    .history-score .sep { color: #444; margin: 0 6px; }
+
+    .history-delete {
+      background: transparent;
+      border: none;
+      color: #333;
+      cursor: pointer;
+      font-size: 1rem;
+      padding: 2px 4px;
+      line-height: 1;
+    }
+
+    .history-delete:active { color: #888; }
+
+    .history-empty {
+      text-align: center;
+      color: #444;
+      font-size: 0.85rem;
+      padding: 14px;
+      border: 1px solid #222;
+      border-radius: 6px;
+    }
 
     /* ── TOAST ── */
     #toast {
@@ -428,10 +518,17 @@
   <button class="btn-sm" onclick="nextHalf()">Next Half ▶</button>
 </div>
 
-<!-- New game -->
-<div class="new-game-row">
-  <button class="btn-new-game" onclick="newGame()">New Game</button>
+<!-- Save / New game -->
+<div class="bottom-row">
+  <button class="btn-save-game" onclick="doSaveGame()">Save Game</button>
+  <button class="btn-new-game"  onclick="newGame()">New Game</button>
 </div>
+
+<!-- History -->
+<button class="history-toggle-btn" id="historyToggle" onclick="toggleHistory()">
+  Past Games ▼
+</button>
+<div id="historyList"></div>
 
 <script>
   // ─── STATE ─────────────────────────────────────────────────────────────────
@@ -491,6 +588,7 @@
 
   // ─── RENDER ────────────────────────────────────────────────────────────────
   function render() {
+    saveCurrentGame();
     const n = teamNames();
 
     // Inning text + arrows
@@ -657,10 +755,100 @@
     render();
   }
 
+  // ─── AUTO-SAVE ─────────────────────────────────────────────────────────────
+  function saveCurrentGame() {
+    try {
+      localStorage.setItem('bb_current', JSON.stringify({
+        state,
+        away: document.getElementById('awayInput').value,
+        home: document.getElementById('homeInput').value
+      }));
+    } catch(e) {}
+  }
+
+  function loadCurrentGame() {
+    try {
+      const saved = JSON.parse(localStorage.getItem('bb_current'));
+      if (saved && saved.state) {
+        state = saved.state;
+        document.getElementById('awayInput').value = saved.away || 'Away';
+        document.getElementById('homeInput').value = saved.home || 'Home';
+      }
+    } catch(e) {}
+  }
+
+  // ─── HISTORY ───────────────────────────────────────────────────────────────
+  function getHistory() {
+    try { return JSON.parse(localStorage.getItem('bb_history')) || []; }
+    catch(e) { return []; }
+  }
+
+  function doSaveGame() {
+    const n = teamNames();
+    const entry = {
+      id:        Date.now(),
+      date:      new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
+      away:      n.away,
+      home:      n.home,
+      awayRuns:  totalRuns('away'),
+      homeRuns:  totalRuns('home'),
+      scorecard: state.scorecard.map(inn => ({...inn}))
+    };
+    const history = getHistory();
+    history.unshift(entry);
+    try { localStorage.setItem('bb_history', JSON.stringify(history)); } catch(e) {}
+    showToast('Game saved!');
+    renderHistory();
+    // Open history panel if it was closed
+    const list = document.getElementById('historyList');
+    if (list.style.display === 'none') toggleHistory();
+  }
+
+  function deleteHistoryEntry(id) {
+    const history = getHistory().filter(e => e.id !== id);
+    try { localStorage.setItem('bb_history', JSON.stringify(history)); } catch(e) {}
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const history = getHistory();
+    const list    = document.getElementById('historyList');
+    if (history.length === 0) {
+      list.innerHTML = '<div class="history-empty">No saved games yet.</div>';
+      return;
+    }
+    list.innerHTML = history.map(e => {
+      const awayClass = e.awayRuns > e.homeRuns ? ' winner' : '';
+      const homeClass = e.homeRuns > e.awayRuns ? ' winner' : '';
+      return `
+        <div class="history-entry">
+          <div class="history-date">${e.date}</div>
+          <div class="history-score">
+            <span class="${awayClass}">${e.away} ${e.awayRuns}</span>
+            <span class="sep">–</span>
+            <span class="${homeClass}">${e.homeRuns} ${e.home}</span>
+          </div>
+          <button class="history-delete" onclick="deleteHistoryEntry(${e.id})">✕</button>
+        </div>`;
+    }).join('');
+  }
+
+  let historyOpen = false;
+
+  function toggleHistory() {
+    historyOpen = !historyOpen;
+    const list = document.getElementById('historyList');
+    list.style.display = historyOpen ? 'flex' : 'none';
+    document.getElementById('historyToggle').textContent =
+      historyOpen ? 'Past Games ▲' : 'Past Games ▼';
+    if (historyOpen) renderHistory();
+  }
+
   // ─── INIT ──────────────────────────────────────────────────────────────────
   document.getElementById('awayInput').addEventListener('input', render);
   document.getElementById('homeInput').addEventListener('input', render);
 
+  loadCurrentGame();
   render();
 </script>
 </body>
