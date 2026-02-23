@@ -452,6 +452,95 @@
       border-radius: 12px;
     }
 
+    /* ── SETUP SCREEN ── */
+    #mainScreen {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    #setupScreen {
+      display: none;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .setup-title {
+      text-align: center;
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #111827;
+      padding: 8px 0 2px;
+      letter-spacing: -0.3px;
+    }
+
+    .setup-subtitle {
+      text-align: center;
+      font-size: 0.76rem;
+      color: #9ca3af;
+      margin-top: 2px;
+    }
+
+    .setup-section-label {
+      font-size: 0.68rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 8px;
+    }
+
+    .setup-team-input {
+      border: 1.5px solid #e5e7eb;
+      border-radius: 10px;
+      padding: 10px 14px;
+      font-size: 0.95rem;
+      font-family: inherit;
+      font-weight: 600;
+      color: #111827;
+      background: #f9fafb;
+      outline: none;
+      width: 100%;
+      transition: border-color 0.15s;
+    }
+
+    .setup-team-input:focus {
+      border-color: #dc2626;
+      background: #fff;
+    }
+
+    .btn-start-game {
+      width: 100%;
+      padding: 18px;
+      background: #dc2626;
+      color: #fff;
+      border: none;
+      border-radius: 14px;
+      font-size: 1rem;
+      font-weight: 700;
+      font-family: inherit;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      cursor: pointer;
+    }
+
+    .btn-start-game:active { filter: brightness(0.88); }
+
+    .btn-continue-game {
+      width: 100%;
+      padding: 13px;
+      background: #fff;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 12px;
+      color: #6b7280;
+      font-family: inherit;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .btn-continue-game:active { background: #f9fafb; }
+
     /* ── TOAST ── */
     #toast {
       position: fixed;
@@ -473,6 +562,32 @@
 <body>
 
 <div id="toast"></div>
+
+<!-- Pre-game setup screen -->
+<div id="setupScreen">
+  <div>
+    <div class="setup-title">⚾ Baseball Scorer</div>
+    <div class="setup-subtitle">Set up your game</div>
+  </div>
+
+  <div class="card">
+    <div class="setup-section-label">Away Team</div>
+    <input class="setup-team-input" id="setupAwayInput" value="Away" maxlength="10"
+           autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Away team name">
+  </div>
+
+  <div class="card">
+    <div class="setup-section-label">Home Team</div>
+    <input class="setup-team-input" id="setupHomeInput" value="Home" maxlength="10"
+           autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Home team name">
+  </div>
+
+  <button class="btn-start-game" onclick="startGame()">⚾ Play Ball</button>
+  <button class="btn-continue-game" id="continueBtn" onclick="hideSetup()">← Continue Current Game</button>
+</div>
+
+<!-- Main scoring screen -->
+<div id="mainScreen">
 
 <!-- Header card: live score + team names + inning -->
 <div class="card">
@@ -598,6 +713,8 @@
   <button class="btn-transfer" onclick="importHistory()">Import ↑</button>
 </div>
 <div id="historyList"></div>
+
+</div><!-- /mainScreen -->
 
 <script>
   // ─── STATE ─────────────────────────────────────────────────────────────────
@@ -822,8 +939,32 @@
   }
 
   function newGame() {
-    if (!confirm('Start a new game? All scores will be reset.')) return;
+    showSetup(false);
+  }
+
+  // ─── SETUP SCREEN ──────────────────────────────────────────────────────────
+  function showSetup(isFirstLaunch) {
+    document.getElementById('setupAwayInput').value =
+      document.getElementById('awayInput').value.trim() || 'Away';
+    document.getElementById('setupHomeInput').value =
+      document.getElementById('homeInput').value.trim() || 'Home';
+    document.getElementById('continueBtn').style.display = isFirstLaunch ? 'none' : '';
+    document.getElementById('mainScreen').style.display  = 'none';
+    document.getElementById('setupScreen').style.display = 'flex';
+  }
+
+  function hideSetup() {
+    document.getElementById('setupScreen').style.display = 'none';
+    document.getElementById('mainScreen').style.display  = '';
+  }
+
+  function startGame() {
     state = freshState();
+    document.getElementById('awayInput').value =
+      document.getElementById('setupAwayInput').value.trim() || 'Away';
+    document.getElementById('homeInput').value =
+      document.getElementById('setupHomeInput').value.trim() || 'Home';
+    hideSetup();
     render();
   }
 
@@ -965,7 +1106,11 @@
   document.getElementById('homeInput').addEventListener('input', render);
 
   loadCurrentGame();
-  render();
+  if (!localStorage.getItem('bb_current')) {
+    showSetup(true);
+  } else {
+    render();
+  }
 </script>
 </body>
 </html>
