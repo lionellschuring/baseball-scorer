@@ -541,6 +541,98 @@
 
     .btn-continue-game:active { background: #f9fafb; }
 
+    /* ── PLAYER LIST ── */
+    .setup-lineup-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin: 12px 0 6px;
+    }
+
+    .btn-add-player {
+      background: #fff;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+      color: #6b7280;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .btn-add-player:active { background: #f3f4f6; }
+
+    .player-list {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+
+    .player-list-empty {
+      text-align: center;
+      color: #9ca3af;
+      font-size: 0.8rem;
+      padding: 8px 0 2px;
+    }
+
+    .player-row {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      background: #f9fafb;
+      border: 1px solid #f3f4f6;
+      border-radius: 10px;
+      padding: 8px 10px;
+    }
+
+    .player-num {
+      font-size: 0.72rem;
+      color: #9ca3af;
+      min-width: 14px;
+      text-align: right;
+      flex-shrink: 0;
+    }
+
+    .player-name-input {
+      flex: 1;
+      border: none;
+      background: transparent;
+      outline: none;
+      font-family: inherit;
+      font-size: 0.88rem;
+      font-weight: 500;
+      color: #111827;
+      min-width: 0;
+    }
+
+    .player-pos-select {
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      background: #fff;
+      color: #374151;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      padding: 4px 5px;
+      cursor: pointer;
+      outline: none;
+      flex-shrink: 0;
+    }
+
+    .player-remove {
+      background: transparent;
+      border: none;
+      color: #d1d5db;
+      font-size: 1rem;
+      cursor: pointer;
+      padding: 0 2px;
+      line-height: 1;
+      flex-shrink: 0;
+    }
+
+    .player-remove:active { color: #9ca3af; }
+
     /* ── TOAST ── */
     #toast {
       position: fixed;
@@ -574,12 +666,22 @@
     <div class="setup-section-label">Away Team</div>
     <input class="setup-team-input" id="setupAwayInput" value="Away" maxlength="10"
            autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Away team name">
+    <div class="setup-lineup-bar">
+      <span class="setup-section-label" style="margin-bottom:0">Lineup</span>
+      <button class="btn-add-player" onclick="addPlayer('away')">+ Add Player</button>
+    </div>
+    <div class="player-list" id="lineup-away"></div>
   </div>
 
   <div class="card">
     <div class="setup-section-label">Home Team</div>
     <input class="setup-team-input" id="setupHomeInput" value="Home" maxlength="10"
            autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Home team name">
+    <div class="setup-lineup-bar">
+      <span class="setup-section-label" style="margin-bottom:0">Lineup</span>
+      <button class="btn-add-player" onclick="addPlayer('home')">+ Add Player</button>
+    </div>
+    <div class="player-list" id="lineup-home"></div>
   </div>
 
   <button class="btn-start-game" onclick="startGame()">⚾ Play Ball</button>
@@ -729,7 +831,8 @@
       outs:      0,
       bases:     [false, false, false],
       pitches:   0,
-      scorecard: Array.from({length: 9}, () => ({away: null, home: null}))
+      scorecard: Array.from({length: 9}, () => ({away: null, home: null})),
+      lineup:    { away: [], home: [] }
     };
   }
 
@@ -943,12 +1046,23 @@
   }
 
   // ─── SETUP SCREEN ──────────────────────────────────────────────────────────
+  const POSITIONS = ['—','P','C','1B','2B','3B','SS','LF','CF','RF','DH'];
+  let setupLineup = { away: [], home: [] };
+
   function showSetup(isFirstLaunch) {
     document.getElementById('setupAwayInput').value =
       document.getElementById('awayInput').value.trim() || 'Away';
     document.getElementById('setupHomeInput').value =
       document.getElementById('homeInput').value.trim() || 'Home';
+    // Seed lineup from saved state if available
+    if (state.lineup) {
+      setupLineup = JSON.parse(JSON.stringify(state.lineup));
+    } else {
+      setupLineup = { away: [], home: [] };
+    }
     document.getElementById('continueBtn').style.display = isFirstLaunch ? 'none' : '';
+    renderLineup('away');
+    renderLineup('home');
     document.getElementById('mainScreen').style.display  = 'none';
     document.getElementById('setupScreen').style.display = 'flex';
   }
@@ -959,13 +1073,69 @@
   }
 
   function startGame() {
+    saveLineupInputs('away');
+    saveLineupInputs('home');
     state = freshState();
+    state.lineup = JSON.parse(JSON.stringify(setupLineup));
     document.getElementById('awayInput').value =
       document.getElementById('setupAwayInput').value.trim() || 'Away';
     document.getElementById('homeInput').value =
       document.getElementById('setupHomeInput').value.trim() || 'Home';
     hideSetup();
     render();
+  }
+
+  // ─── PLAYER ROSTER ─────────────────────────────────────────────────────────
+  function escAttr(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');
+  }
+
+  function saveLineupInputs(team) {
+    const list = document.getElementById('lineup-' + team);
+    if (!list) return;
+    list.querySelectorAll('.player-row').forEach((row, i) => {
+      if (!setupLineup[team][i]) return;
+      setupLineup[team][i].name = row.querySelector('.player-name-input').value.trim();
+      setupLineup[team][i].pos  = row.querySelector('.player-pos-select').value;
+    });
+  }
+
+  function renderLineup(team) {
+    const list = document.getElementById('lineup-' + team);
+    if (!list) return;
+    if (setupLineup[team].length === 0) {
+      list.innerHTML = '<div class="player-list-empty">No players added yet</div>';
+      return;
+    }
+    list.innerHTML = setupLineup[team].map((p, i) => {
+      const opts = POSITIONS.map(pos =>
+        `<option${p.pos === pos ? ' selected' : ''}>${escAttr(pos)}</option>`
+      ).join('');
+      return `<div class="player-row" data-idx="${i}">
+        <span class="player-num">${i + 1}.</span>
+        <input class="player-name-input" value="${escAttr(p.name)}"
+               placeholder="Player ${i + 1}" maxlength="20">
+        <select class="player-pos-select">${opts}</select>
+        <button class="player-remove" onclick="removePlayer('${team}',${i})" aria-label="Remove">×</button>
+      </div>`;
+    }).join('');
+  }
+
+  function addPlayer(team) {
+    saveLineupInputs(team);
+    if (setupLineup[team].length >= 15) return; // reasonable cap
+    setupLineup[team].push({ name: '', pos: '—' });
+    renderLineup(team);
+    // Focus the new name field
+    const list = document.getElementById('lineup-' + team);
+    const inputs = list.querySelectorAll('.player-name-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }
+
+  function removePlayer(team, idx) {
+    saveLineupInputs(team);
+    setupLineup[team].splice(idx, 1);
+    renderLineup(team);
   }
 
   // ─── AUTO-SAVE ─────────────────────────────────────────────────────────────
@@ -984,6 +1154,7 @@
       const saved = JSON.parse(localStorage.getItem('bb_current'));
       if (saved && saved.state) {
         state = saved.state;
+        if (!state.lineup) state.lineup = { away: [], home: [] };
         document.getElementById('awayInput').value = saved.away || 'Away';
         document.getElementById('homeInput').value = saved.home || 'Home';
       }
