@@ -1491,16 +1491,23 @@
     const nextNames = ['2nd Base', '3rd Base', 'Home'];
     const label     = runner.name || `#${runner.orderNum}`;
 
-    showActionSheet(`${label} — ${baseNames[baseIdx]}`, [
-      ...(baseIdx < 2 ? [{
-        label: `→ Advance to ${nextNames[baseIdx]}`,
+    // Build advance options for every reachable base ahead
+    const advanceOptions = [];
+    for (let dest = baseIdx + 1; dest <= 2; dest++) {
+      const d = dest; // capture for closure
+      advanceOptions.push({
+        label: `→ Advance to ${baseNames[d]}`,
         cls: 'as-btn-advance',
         fn() {
-          state.bases[baseIdx + 1] = runner;
-          state.bases[baseIdx]     = null;
+          state.bases[d]       = runner;
+          state.bases[baseIdx] = null;
           render();
         }
-      }] : []),
+      });
+    }
+
+    showActionSheet(`${label} — ${baseNames[baseIdx]}`, [
+      ...advanceOptions,
       {
         label: (() => {
           const lb = state.lastBatter[runner.team || battingTeam()];
