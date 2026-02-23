@@ -355,6 +355,161 @@
 
     .btn-new-game:active { background: #f9fafb; }
 
+    .btn-changes {
+      flex: 1;
+      padding: 11px 12px;
+      background: #fff;
+      border: 1.5px solid #3b82f6;
+      border-radius: 10px;
+      color: #3b82f6;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .btn-changes:active { background: #eff6ff; }
+
+    /* ── CHANGES PANEL ── */
+    .changes-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 100;
+    }
+
+    .changes-sheet {
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      max-width: 480px;
+      margin: 0 auto;
+      background: #f1f5f9;
+      border-radius: 20px 20px 0 0;
+      max-height: 88vh;
+      overflow-y: auto;
+      z-index: 101;
+      padding-bottom: 32px;
+    }
+
+    .changes-header {
+      position: sticky;
+      top: 0;
+      background: #fff;
+      border-bottom: 1px solid #e5e7eb;
+      border-radius: 20px 20px 0 0;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 16px 14px;
+    }
+
+    .changes-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    .changes-done-btn {
+      background: #111827;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 7px 16px;
+      font-family: inherit;
+      font-size: 0.82rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .changes-team-label {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: #6b7280;
+      padding: 12px 16px 4px;
+    }
+
+    .changes-player-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 9px 16px;
+      background: #fff;
+      border-bottom: 1px solid #f3f4f6;
+    }
+
+    .changes-order {
+      font-size: 0.72rem;
+      color: #9ca3af;
+      min-width: 16px;
+      text-align: right;
+    }
+
+    .changes-name {
+      flex: 1;
+      font-size: 0.85rem;
+      color: #111827;
+      font-weight: 500;
+    }
+
+    .changes-sub-btn {
+      font-size: 0.73rem;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 5px 10px;
+      color: #374151;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .changes-sub-btn:active { background: #e5e7eb; }
+
+    .changes-sub-form {
+      padding: 8px 16px 10px 40px;
+      background: #f8fafc;
+      border-bottom: 1px solid #e5e7eb;
+      display: flex;
+      gap: 6px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    .changes-sub-input {
+      flex: 1;
+      min-width: 110px;
+      border: 1px solid #d1d5db;
+      border-radius: 8px;
+      padding: 7px 10px;
+      font-family: inherit;
+      font-size: 0.85rem;
+      background: #fff;
+    }
+
+    .changes-confirm-btn {
+      background: #16a34a;
+      color: #fff;
+      border: none;
+      border-radius: 7px;
+      padding: 7px 14px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .changes-cancel-btn {
+      background: transparent;
+      border: 1px solid #e5e7eb;
+      border-radius: 7px;
+      padding: 7px 10px;
+      font-family: inherit;
+      font-size: 0.8rem;
+      color: #9ca3af;
+      cursor: pointer;
+    }
+
     /* ── SECTION DIVIDER ── */
     .section-divider {
       display: flex;
@@ -1100,7 +1255,12 @@
 
 <div class="section-divider"><span>Game Controls</span></div>
 
-<!-- Save / New game -->
+<!-- Lineup changes -->
+<div class="bottom-row">
+  <button class="btn-changes" onclick="openChanges()">Lineup Changes ↕</button>
+</div>
+
+<!-- End / New game -->
 <div class="bottom-row">
   <button class="btn-save-game" onclick="doSaveGame()">End Game</button>
   <button class="btn-new-game"  onclick="newGame()">New Game</button>
@@ -1125,6 +1285,16 @@
   </div>
 </div>
 
+<!-- Lineup Changes panel -->
+<div class="changes-overlay" id="changesOverlay" onclick="closeChanges()" style="display:none"></div>
+<div class="changes-sheet" id="changesSheet" style="display:none">
+  <div class="changes-header">
+    <span class="changes-title">Lineup Changes</span>
+    <button class="changes-done-btn" onclick="closeChanges()">Done</button>
+  </div>
+  <div id="changesList"></div>
+</div>
+
 <script>
   // ─── STATE ─────────────────────────────────────────────────────────────────
   let state = freshState();
@@ -1139,10 +1309,9 @@
       bases:     [null, null, null],
       pitches:   0,
       scorecard: Array.from({length: 9}, () => ({away: null, home: null})),
-      lineup:       { away: [], home: [] },
-      batterIdx:    { away: 0, home: 0 },
-      lastBatter:   { away: null, home: null },
-      pitcherOuts:  { away: 0, home: 0 }
+      lineup:     { away: [], home: [] },
+      batterIdx:  { away: 0, home: 0 },
+      lastBatter: { away: null, home: null }
     };
   }
 
@@ -1399,7 +1568,8 @@
   }
 
   function creditPitcherOut(defTeam) {
-    state.pitcherOuts[defTeam] = (state.pitcherOuts[defTeam] || 0) + 1;
+    const pitcher = (state.lineup[defTeam] || []).find(p => p.pos && p.pos.toUpperCase() === 'P');
+    if (pitcher) pitcher.pitchOuts = (pitcher.pitchOuts || 0) + 1;
   }
 
   function autoCreditCatcher(defTeam) {
@@ -1727,8 +1897,8 @@
     state = freshState();
     // Deep copy lineup and add fresh stat counters
     state.lineup = {
-      away: setupLineup.away.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0, po:0 })),
-      home: setupLineup.home.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0, po:0 }))
+      away: setupLineup.away.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0, po:0, pitchOuts:0 })),
+      home: setupLineup.home.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0, po:0, pitchOuts:0 }))
     };
     document.getElementById('awayInput').value =
       document.getElementById('setupAwayInput').value.trim() || 'Away';
@@ -1908,21 +2078,29 @@
           if (!b || typeof b === 'boolean') return null;
           return b; // already a runner object
         });
-        if (!state.lastBatter)  state.lastBatter  = { away: null, home: null };
-        if (!state.pitcherOuts) state.pitcherOuts = { away: 0, home: 0 };
+        if (!state.lastBatter) state.lastBatter = { away: null, home: null };
         // Ensure stat fields exist on all players (backwards compat)
         ['away', 'home'].forEach(team => {
           (state.lineup[team] || []).forEach(p => {
-            if (p.ab  === undefined) p.ab  = 0;
-            if (p.h   === undefined) p.h   = 0;
-            if (p.hr  === undefined) p.hr  = 0;
-            if (p.r   === undefined) p.r   = 0;
-            if (p.rbi === undefined) p.rbi = 0;
-            if (p.bb  === undefined) p.bb  = 0;
-            if (p.k   === undefined) p.k   = 0;
-            if (p.po  === undefined) p.po  = 0;
+            if (p.ab        === undefined) p.ab        = 0;
+            if (p.h         === undefined) p.h         = 0;
+            if (p.hr        === undefined) p.hr        = 0;
+            if (p.r         === undefined) p.r         = 0;
+            if (p.rbi       === undefined) p.rbi       = 0;
+            if (p.bb        === undefined) p.bb        = 0;
+            if (p.k         === undefined) p.k         = 0;
+            if (p.po        === undefined) p.po        = 0;
+            if (p.pitchOuts === undefined) p.pitchOuts = 0;
           });
         });
+        // Migrate old team-level pitcherOuts to per-player pitchOuts
+        if (state.pitcherOuts) {
+          ['away', 'home'].forEach(team => {
+            const p = (state.lineup[team] || []).find(x => x.pos && x.pos.toUpperCase() === 'P');
+            if (p) p.pitchOuts = state.pitcherOuts[team] || 0;
+          });
+          delete state.pitcherOuts;
+        }
         document.getElementById('awayInput').value = saved.away || 'Away';
         document.getElementById('homeInput').value = saved.home || 'Home';
       }
@@ -1945,11 +2123,10 @@
       awayRuns:  totalRuns('away'),
       homeRuns:  totalRuns('home'),
       scorecard: state.scorecard.map(inn => ({...inn})),
-      lineup:       {
+      lineup: {
         away: (state.lineup.away || []).map(p => ({...p})),
         home: (state.lineup.home || []).map(p => ({...p}))
-      },
-      pitcherOuts:  { ...state.pitcherOuts }
+      }
     };
     const history = getHistory();
     history.unshift(entry);
@@ -1993,23 +2170,31 @@
       });
       html += `</tbody></table>`;
 
-      const pitcher = players.find(p => p.pos && p.pos.toUpperCase() === 'P');
-      if (pitcher) {
-        const pitchK  = oppPlayers.reduce((s, p) => s + (p.k  || 0), 0);
-        const pitchBB = oppPlayers.reduce((s, p) => s + (p.bb || 0), 0);
-        const pitchH  = oppPlayers.reduce((s, p) => s + (p.h  || 0) + (p.hr || 0), 0);
-        const pitchR  = team === 'away' ? (e.homeRuns || 0) : (e.awayRuns || 0);
-        const po      = (e.pitcherOuts || {})[team] || 0;
-        const ip      = Math.floor(po / 3) + '.' + (po % 3);
+      const pitchers = players.filter(p => (p.pitchOuts || 0) > 0 || (p.pos && p.pos.toUpperCase() === 'P'));
+      if (pitchers.length > 0) {
+        const curPitcher = players.find(p => p.pos && p.pos.toUpperCase() === 'P');
+        const totK  = oppPlayers.reduce((s, p) => s + (p.k  || 0), 0);
+        const totBB = oppPlayers.reduce((s, p) => s + (p.bb || 0), 0);
+        const totH  = oppPlayers.reduce((s, p) => s + (p.h  || 0) + (p.hr || 0), 0);
+        const totR  = team === 'away' ? (e.homeRuns || 0) : (e.awayRuns || 0);
         html += `<div class="pitching-header">Pitching</div>
         <table class="lineup-stats-table">
           <thead><tr>
             <th class="lss-name">Pitcher</th>
             <th>IP</th><th>H</th><th>R</th><th>K</th><th>BB</th>
-          </tr></thead><tbody><tr>
-            <td class="lss-name">${pitcher.name || 'Pitcher'}</td>
-            <td>${ip}</td><td>${pitchH}</td><td>${pitchR}</td><td>${pitchK}</td><td>${pitchBB}</td>
-          </tr></tbody></table>`;
+          </tr></thead><tbody>`;
+        pitchers.forEach(p => {
+          const outs = p.pitchOuts || 0;
+          const ip   = Math.floor(outs / 3) + '.' + (outs % 3);
+          const isCur = p === curPitcher;
+          html += `<tr>
+            <td class="lss-name">${p.name || 'Pitcher'}</td>
+            <td>${ip}</td>
+            <td>${isCur ? totH : '—'}</td><td>${isCur ? totR : '—'}</td>
+            <td>${isCur ? totK : '—'}</td><td>${isCur ? totBB : '—'}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
       }
 
       html += `</div>`;
@@ -2160,30 +2345,119 @@
 
       html += `</tbody></table>`;
 
-      // Pitching section — only shown when a pitcher (pos P) is in the lineup
-      const pitcher = lineup.find(p => p.pos && p.pos.toUpperCase() === 'P');
-      if (pitcher) {
-        const pitchK  = oppLineup.reduce((s, p) => s + (p.k  || 0), 0);
-        const pitchBB = oppLineup.reduce((s, p) => s + (p.bb || 0), 0);
-        const pitchH  = oppLineup.reduce((s, p) => s + (p.h  || 0) + (p.hr || 0), 0);
-        const pitchR  = totalRuns(oppTeam);
-        const outs    = state.pitcherOuts[team] || 0;
-        const ip      = Math.floor(outs / 3) + '.' + (outs % 3);
+      // Pitching section — all players who pitched this game
+      const pitchers = lineup.filter(p => (p.pitchOuts || 0) > 0 || (p.pos && p.pos.toUpperCase() === 'P'));
+      if (pitchers.length > 0) {
+        const curPitcher = lineup.find(p => p.pos && p.pos.toUpperCase() === 'P');
+        const totK  = oppLineup.reduce((s, p) => s + (p.k  || 0), 0);
+        const totBB = oppLineup.reduce((s, p) => s + (p.bb || 0), 0);
+        const totH  = oppLineup.reduce((s, p) => s + (p.h  || 0) + (p.hr || 0), 0);
+        const totR  = totalRuns(oppTeam);
         html += `<div class="pitching-header">Pitching</div>
         <table class="lineup-stats-table">
           <thead><tr>
             <th class="lss-name">Pitcher</th>
             <th>IP</th><th>H</th><th>R</th><th>K</th><th>BB</th>
-          </tr></thead><tbody><tr>
-            <td class="lss-name">${pitcher.name || 'Pitcher'}</td>
-            <td>${ip}</td><td>${pitchH}</td><td>${pitchR}</td><td>${pitchK}</td><td>${pitchBB}</td>
-          </tr></tbody></table>`;
+          </tr></thead><tbody>`;
+        pitchers.forEach(p => {
+          const outs = p.pitchOuts || 0;
+          const ip   = Math.floor(outs / 3) + '.' + (outs % 3);
+          const isCur = p === curPitcher;
+          html += `<tr>
+            <td class="lss-name">${p.name || 'Pitcher'}</td>
+            <td>${ip}</td>
+            <td>${isCur ? totH : '—'}</td><td>${isCur ? totR : '—'}</td>
+            <td>${isCur ? totK : '—'}</td><td>${isCur ? totBB : '—'}</td>
+          </tr>`;
+        });
+        html += `</tbody></table>`;
       }
 
       html += `</div>`;
     });
 
     el.innerHTML = html || '<div class="history-empty">No lineup set.</div>';
+  }
+
+  // ─── LINEUP CHANGES ────────────────────────────────────────────────────────
+  function openChanges() {
+    renderChangesPanel();
+    document.getElementById('changesOverlay').style.display = 'block';
+    document.getElementById('changesSheet').style.display   = 'block';
+  }
+
+  function closeChanges() {
+    document.getElementById('changesOverlay').style.display = 'none';
+    document.getElementById('changesSheet').style.display   = 'none';
+    render(); // Reflect any position changes in the batter card etc.
+  }
+
+  function renderChangesPanel() {
+    const n    = teamNames();
+    const list = document.getElementById('changesList');
+    let html   = '';
+
+    ['away', 'home'].forEach(team => {
+      const lineup = state.lineup[team];
+      if (!lineup || lineup.length === 0) return;
+      html += `<div class="changes-team-label">${n[team]}</div>`;
+      lineup.forEach((p, i) => {
+        const posOpts = POSITIONS.map(pos =>
+          `<option value="${pos}" ${p.pos === pos ? 'selected' : ''}>${pos}</option>`
+        ).join('');
+        html += `
+        <div class="changes-player-row" id="cpr-${team}-${i}">
+          <span class="changes-order">${i + 1}</span>
+          <select class="player-pos-select" style="width:52px"
+            onchange="changePlayerPos('${team}', ${i}, this.value)">${posOpts}</select>
+          <span class="changes-name">${escAttr(p.name || `Player ${i + 1}`)}</span>
+          <button class="changes-sub-btn" onclick="toggleSubForm('${team}', ${i})">Sub ↕</button>
+        </div>
+        <div class="changes-sub-form" id="csf-${team}-${i}" style="display:none">
+          <input class="changes-sub-input" id="csi-${team}-${i}"
+            placeholder="New player name" autocomplete="off" />
+          <select class="player-pos-select" id="csp-${team}-${i}">
+            ${POSITIONS.map(pos => `<option value="${pos}">${pos}</option>`).join('')}
+          </select>
+          <button class="changes-confirm-btn" onclick="confirmSub('${team}', ${i})">In ✓</button>
+          <button class="changes-cancel-btn"  onclick="toggleSubForm('${team}', ${i})">✗</button>
+        </div>`;
+      });
+    });
+
+    if (!html) html = '<div style="padding:20px;text-align:center;color:#9ca3af">No lineup set up.</div>';
+    list.innerHTML = html;
+  }
+
+  function changePlayerPos(team, idx, newPos) {
+    if (state.lineup[team] && state.lineup[team][idx]) {
+      state.lineup[team][idx].pos = newPos;
+    }
+  }
+
+  function toggleSubForm(team, idx) {
+    const form = document.getElementById(`csf-${team}-${idx}`);
+    const isOpen = form.style.display !== 'none';
+    // Close all open forms first
+    document.querySelectorAll('[id^="csf-"]').forEach(el => el.style.display = 'none');
+    if (!isOpen) {
+      form.style.display = 'flex';
+      setTimeout(() => document.getElementById(`csi-${team}-${idx}`).focus(), 50);
+    }
+  }
+
+  function confirmSub(team, idx) {
+    const nameInput = document.getElementById(`csi-${team}-${idx}`);
+    const posInput  = document.getElementById(`csp-${team}-${idx}`);
+    const newName   = nameInput.value.trim();
+    if (!newName) { nameInput.focus(); return; }
+    const outName   = state.lineup[team][idx].name || `Player ${idx + 1}`;
+    state.lineup[team][idx] = {
+      name: newName, pos: posInput.value,
+      ab: 0, h: 0, hr: 0, r: 0, rbi: 0, bb: 0, k: 0, po: 0, pitchOuts: 0
+    };
+    showToast(`${newName} in (replaces ${outName})`);
+    renderChangesPanel();
   }
 
   // ─── SHARE STATS ───────────────────────────────────────────────────────────
