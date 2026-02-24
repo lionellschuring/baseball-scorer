@@ -2214,8 +2214,12 @@
 </div>
 
 <!-- Scoreboard -->
-<div class="card" style="padding: 10px 12px;">
-  <table id="scoreboard"></table>
+<div class="card" style="padding: 0; overflow: hidden;">
+  <button class="history-toggle-btn" id="scoreboardToggle"
+          onclick="toggleScoreboard()" style="width:100%; border-radius:10px;">Innings ▲</button>
+  <div id="scoreboardWrap" style="padding: 6px 12px 10px;">
+    <table id="scoreboard"></table>
+  </div>
 </div>
 
 <!-- Field card: diamond + count + pitch -->
@@ -3597,6 +3601,16 @@
       reader.readAsText(file);
     };
     input.click();
+  }
+
+  // ─── SCOREBOARD TOGGLE ─────────────────────────────────────────────────────
+  let scoreboardOpen = true;
+
+  function toggleScoreboard() {
+    scoreboardOpen = !scoreboardOpen;
+    document.getElementById('scoreboardWrap').style.display = scoreboardOpen ? '' : 'none';
+    document.getElementById('scoreboardToggle').textContent =
+      scoreboardOpen ? 'Innings ▲' : 'Innings ▼';
   }
 
   // ─── LINEUP STATS ──────────────────────────────────────────────────────────
