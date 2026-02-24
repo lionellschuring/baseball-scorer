@@ -19,7 +19,7 @@
       min-height: 100vh;
       max-width: 480px;
       margin: 0 auto;
-      padding: 12px;
+      padding: 12px 12px calc(158px + env(safe-area-inset-bottom, 0px));
       display: flex;
       flex-direction: column;
       gap: 10px;
@@ -30,6 +30,52 @@
       border-radius: 14px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
       padding: 16px;
+    }
+
+    /* ── GAME STATE BAR ── */
+    .game-state-bar {
+      position: sticky;
+      top: 12px;
+      z-index: 50;
+      background: #1f2937;
+      border-radius: 14px;
+      padding: 10px 14px 9px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .gsb-top {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      flex-wrap: wrap;
+    }
+
+    .gsb-piece {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: #f9fafb;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      white-space: nowrap;
+    }
+
+    .gsb-piece.gsb-danger { color: #fca5a5; }
+
+    .gsb-sep {
+      font-size: 0.65rem;
+      color: #4b5563;
+      font-weight: 400;
+      flex-shrink: 0;
+    }
+
+    .gsb-batter {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #6b7280;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
     }
 
     /* ── HEADER CARD ── */
@@ -271,9 +317,20 @@
 
     /* ── ACTION BUTTONS ── */
     .actions {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 12px;
+      padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
+      background: #f1f5f9;
+      z-index: 40;
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 8px;
+      box-shadow: 0 -2px 16px rgba(0,0,0,0.10);
     }
 
     .btn {
@@ -1134,6 +1191,20 @@
 <!-- Main scoring screen -->
 <div id="mainScreen">
 
+<!-- Game State Bar -->
+<div id="gameStateBar" class="game-state-bar">
+  <div class="gsb-top">
+    <span class="gsb-piece" id="gsbInning"></span>
+    <span class="gsb-sep">|</span>
+    <span class="gsb-piece" id="gsbOuts"></span>
+    <span class="gsb-sep">|</span>
+    <span class="gsb-piece" id="gsbCount"></span>
+    <span class="gsb-sep">|</span>
+    <span class="gsb-piece" id="gsbRunners"></span>
+  </div>
+  <div class="gsb-batter" id="gsbBatter"></div>
+</div>
+
 <!-- Header card: live score + team names + inning -->
 <div class="card">
   <div class="score-header">
@@ -1401,8 +1472,48 @@
     // Current batter
     renderBatterCard();
 
+    // Game state bar
+    renderGameStateBar();
+
     // Refresh lineup stats if open
     if (lineupStatsOpen) renderLineupStats();
+  }
+
+  function renderGameStateBar() {
+    // Inning
+    const half = state.isTop ? '▲' : '▼';
+    document.getElementById('gsbInning').textContent = `${half} ${ordinal(state.inning)}`;
+
+    // Outs — red when danger (2 outs)
+    const outsEl = document.getElementById('gsbOuts');
+    outsEl.textContent = state.outs === 1 ? '1 OUT' : `${state.outs} OUTS`;
+    outsEl.className   = 'gsb-piece' + (state.outs === 2 ? ' gsb-danger' : '');
+
+    // Count
+    document.getElementById('gsbCount').textContent = `${state.balls}–${state.strikes}`;
+
+    // Runners
+    const names    = ['1B', '2B', '3B'];
+    const occupied = names.filter((_, i) => state.bases[i]);
+    let runnersText;
+    if (occupied.length === 0)      runnersText = 'NONE ON';
+    else if (occupied.length === 3) runnersText = 'LOADED';
+    else                            runnersText = occupied.join(' & ');
+    document.getElementById('gsbRunners').textContent = runnersText;
+
+    // Batter
+    const batterEl = document.getElementById('gsbBatter');
+    const team   = battingTeam();
+    const lineup = state.lineup[team];
+    const p      = currentBatterPlayer();
+    if (p && lineup && lineup.length > 0) {
+      const idx = state.batterIdx[team];
+      const name = (p.name || `Player ${idx + 1}`).toUpperCase();
+      batterEl.textContent = `BATTER: #${idx + 1} ${name}`;
+      batterEl.style.display = '';
+    } else {
+      batterEl.style.display = 'none';
+    }
   }
 
   function makeDots(id, count, max, type) {
