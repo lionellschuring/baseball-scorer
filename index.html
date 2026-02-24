@@ -1076,6 +1076,37 @@
 
     .btn-add-player:active { background: #f3f4f6; }
 
+    .btn-clear-lineup {
+      background: #fff;
+      border: 1px solid #fca5a5;
+      border-radius: 8px;
+      color: #dc2626;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 500;
+      padding: 5px 10px;
+      cursor: pointer;
+    }
+
+    .btn-clear-lineup:active { background: #fef2f2; }
+
+    .btn-swap-teams {
+      background: #fff;
+      border: 1px solid #c7d2fe;
+      border-radius: 10px;
+      color: #4f46e5;
+      font-family: inherit;
+      font-size: 0.8rem;
+      font-weight: 500;
+      padding: 7px 16px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-swap-teams:active { background: #eef2ff; }
+
     .player-list {
       display: flex;
       flex-direction: column;
@@ -2083,7 +2114,10 @@
            autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Away team name">
     <div class="setup-lineup-bar">
       <span class="setup-section-label" style="margin-bottom:0">Lineup</span>
-      <button class="btn-add-player" onclick="addPlayer('away')">+ Add Player</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-clear-lineup" onclick="clearLineup('away')">Clear</button>
+        <button class="btn-add-player" onclick="addPlayer('away')">+ Add Player</button>
+      </div>
     </div>
     <div class="player-list" id="lineup-away"></div>
     <div class="setup-lineup-bar" style="margin-top:12px;">
@@ -2093,13 +2127,20 @@
     <div class="player-list" id="bench-away"></div>
   </div>
 
+  <div style="display:flex;justify-content:center;margin:2px 0;">
+    <button class="btn-swap-teams" onclick="swapTeams()">⇄ Swap Away / Home</button>
+  </div>
+
   <div class="card">
     <div class="setup-section-label">Home Team</div>
     <input class="setup-team-input" id="setupHomeInput" value="Home" maxlength="10"
            autocomplete="off" autocorrect="off" spellcheck="false" placeholder="Home team name">
     <div class="setup-lineup-bar">
       <span class="setup-section-label" style="margin-bottom:0">Lineup</span>
-      <button class="btn-add-player" onclick="addPlayer('home')">+ Add Player</button>
+      <div style="display:flex;gap:6px;">
+        <button class="btn-clear-lineup" onclick="clearLineup('home')">Clear</button>
+        <button class="btn-add-player" onclick="addPlayer('home')">+ Add Player</button>
+      </div>
     </div>
     <div class="player-list" id="lineup-home"></div>
     <div class="setup-lineup-bar" style="margin-top:12px;">
@@ -3107,6 +3148,30 @@
     saveLineupInputs(team);
     setupLineup[team].splice(idx, 1);
     renderLineup(team);
+  }
+
+  function clearLineup(team) {
+    setupLineup[team] = [];
+    renderLineup(team);
+  }
+
+  function swapTeams() {
+    saveLineupInputs('away');
+    saveLineupInputs('home');
+    saveBenchInputs('away');
+    saveBenchInputs('home');
+    // Swap lineups
+    [setupLineup.away, setupLineup.home] = [setupLineup.home, setupLineup.away];
+    // Swap bench
+    [setupBench.away, setupBench.home] = [setupBench.home, setupBench.away];
+    // Swap team name inputs
+    const awayInput = document.getElementById('setupAwayInput');
+    const homeInput = document.getElementById('setupHomeInput');
+    [awayInput.value, homeInput.value] = [homeInput.value, awayInput.value];
+    renderLineup('away');
+    renderLineup('home');
+    renderBench('away');
+    renderBench('home');
   }
 
   // ─── BENCH ROSTER ───────────────────────────────────────────────────────────
