@@ -2225,7 +2225,7 @@
       <div class="arrow-down" id="arrowDown"></div>
     </div>
     <div class="inning-text" id="inningText">TOP — 1st INNING</div>
-    <span id="scoreboardChevron" class="scoreboard-chevron">▴</span>
+    <span id="scoreboardChevron" class="scoreboard-chevron">▲</span>
   </div>
   <div id="scoreboardWrap" style="margin-top:8px; border-top:1px solid #f3f4f6; padding-top:8px;">
     <table id="scoreboard"></table>
@@ -3619,7 +3619,7 @@
   function toggleScoreboard() {
     scoreboardOpen = !scoreboardOpen;
     document.getElementById('scoreboardWrap').style.display = scoreboardOpen ? '' : 'none';
-    document.getElementById('scoreboardChevron').textContent = scoreboardOpen ? '▴' : '▾';
+    document.getElementById('scoreboardChevron').textContent = scoreboardOpen ? '▲' : '▼';
   }
 
   // ─── LINEUP STATS ──────────────────────────────────────────────────────────
