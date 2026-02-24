@@ -2693,7 +2693,11 @@
     if (baseIdx === 3) {
       // Score all runners (each gets R; each scores an RBI for the HR hitter)
       for (let i = 2; i >= 0; i--) {
-        if (state.bases[i]) { scoreRunner(i); creditRbi(team); }
+        if (state.bases[i]) {
+          scoreRunnerObject(state.bases[i], team);
+          state.bases[i] = null;
+          creditRbi(team);
+        }
       }
       // Batter scores too
       if (batterP) batterP.r = (batterP.r || 0) + 1;
@@ -2702,8 +2706,11 @@
       ensureInning(inn);
       if (state.scorecard[inn][team] === null) state.scorecard[inn][team] = 0;
       state.scorecard[inn][team]++;
+      state.balls   = 0;
+      state.strikes = 0;
       advanceBatter();
       showToast('Home Run! 🎉', 2200);
+      render();
     } else {
       const hitNames = ['Single', 'Double', 'Triple'];
       const advance  = baseIdx + 1;
