@@ -115,6 +115,35 @@
       border-bottom-color: #dc2626;
     }
 
+    .score-with-adj {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .score-adj {
+      background: transparent;
+      border: 1.5px solid #e5e7eb;
+      border-radius: 50%;
+      color: #9ca3af;
+      font-size: 1.1rem;
+      width: 28px;
+      height: 28px;
+      cursor: pointer;
+      font-family: inherit;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      line-height: 1;
+    }
+
+    .score-adj:active {
+      background: #f3f4f6;
+      border-color: #d1d5db;
+      color: #374151;
+    }
+
     .team-run-score {
       font-size: 2.6rem;
       font-weight: 800;
@@ -1213,7 +1242,11 @@
     <div class="team-block">
       <input class="team-input" id="awayInput" value="Away" maxlength="10"
              autocomplete="off" autocorrect="off" spellcheck="false" placeholder="AWAY">
-      <div class="team-run-score" id="awayScore">0</div>
+      <div class="score-with-adj">
+        <button class="score-adj" onclick="adjustRun('away', -1)">−</button>
+        <div class="team-run-score" id="awayScore">0</div>
+        <button class="score-adj" onclick="adjustRun('away', 1)">+</button>
+      </div>
     </div>
     <div class="score-center">
       <span class="score-dash">—</span>
@@ -1221,7 +1254,11 @@
     <div class="team-block">
       <input class="team-input" id="homeInput" value="Home" maxlength="10"
              autocomplete="off" autocorrect="off" spellcheck="false" placeholder="HOME">
-      <div class="team-run-score" id="homeScore">0</div>
+      <div class="score-with-adj">
+        <button class="score-adj" onclick="adjustRun('home', -1)">−</button>
+        <div class="team-run-score" id="homeScore">0</div>
+        <button class="score-adj" onclick="adjustRun('home', 1)">+</button>
+      </div>
     </div>
   </div>
   <div class="inning-badge">
@@ -1332,8 +1369,6 @@
 
 <!-- Secondary controls -->
 <div class="secondary">
-  <button class="btn-sm" onclick="doRun()">+ Run</button>
-  <button class="btn-sm" onclick="undoRun()">− Run</button>
   <button class="btn-sm" onclick="resetCount()">Reset Count</button>
   <button class="btn-sm" onclick="nextHalf()">Next Half ▶</button>
 </div>
@@ -1784,23 +1819,12 @@
     render();
   }
 
-  function doRun() {
-    const team = battingTeam();
-    const idx  = state.inning - 1;
+  function adjustRun(team, delta) {
+    const idx = state.inning - 1;
     ensureInning(idx);
     if (state.scorecard[idx][team] === null) state.scorecard[idx][team] = 0;
-    state.scorecard[idx][team]++;
+    state.scorecard[idx][team] = Math.max(0, state.scorecard[idx][team] + delta);
     render();
-  }
-
-  function undoRun() {
-    const team = battingTeam();
-    const idx  = state.inning - 1;
-    ensureInning(idx);
-    if (state.scorecard[idx][team] > 0) {
-      state.scorecard[idx][team]--;
-      render();
-    }
   }
 
   function resetCount() {
