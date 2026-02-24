@@ -171,6 +171,17 @@
       align-items: center;
       justify-content: center;
       gap: 8px;
+      cursor: pointer;
+      padding: 4px 0;
+      border-radius: 6px;
+    }
+
+    .inning-badge:active { background: #f9fafb; }
+
+    .scoreboard-chevron {
+      font-size: 0.6rem;
+      color: #d1d5db;
+      line-height: 1;
     }
 
     .half-arrows {
@@ -2179,7 +2190,7 @@
   <div class="gsb-batter" id="gsbBatter"></div>
 </div>
 
-<!-- Header card: live score + team names + inning -->
+<!-- Header card: live score + team names + inning + scoreboard -->
 <div class="card">
   <div class="score-header">
     <div class="team-block">
@@ -2204,20 +2215,15 @@
       </div>
     </div>
   </div>
-  <div class="inning-badge">
+  <div class="inning-badge" onclick="toggleScoreboard()">
     <div class="half-arrows">
       <div class="arrow-up"   id="arrowUp"></div>
       <div class="arrow-down" id="arrowDown"></div>
     </div>
     <div class="inning-text" id="inningText">TOP — 1st INNING</div>
+    <span id="scoreboardChevron" class="scoreboard-chevron">▴</span>
   </div>
-</div>
-
-<!-- Scoreboard -->
-<div class="card" style="padding: 0; overflow: hidden;">
-  <button class="history-toggle-btn" id="scoreboardToggle"
-          onclick="toggleScoreboard()" style="width:100%; border-radius:10px;">Innings ▲</button>
-  <div id="scoreboardWrap" style="padding: 6px 12px 10px;">
+  <div id="scoreboardWrap" style="margin-top:8px; border-top:1px solid #f3f4f6; padding-top:8px;">
     <table id="scoreboard"></table>
   </div>
 </div>
@@ -3609,8 +3615,7 @@
   function toggleScoreboard() {
     scoreboardOpen = !scoreboardOpen;
     document.getElementById('scoreboardWrap').style.display = scoreboardOpen ? '' : 'none';
-    document.getElementById('scoreboardToggle').textContent =
-      scoreboardOpen ? 'Innings ▲' : 'Innings ▼';
+    document.getElementById('scoreboardChevron').textContent = scoreboardOpen ? '▴' : '▾';
   }
 
   // ─── LINEUP STATS ──────────────────────────────────────────────────────────
