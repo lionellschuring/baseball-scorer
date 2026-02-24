@@ -851,26 +851,22 @@
 
     .batter-nav:active { background: #f3f4f6; }
 
-    .batter-card-header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 10px;
-    }
-
-    .btn-changes-inline {
-      font-size: 0.7rem;
-      font-weight: 600;
-      color: #6b7280;
-      background: #f3f4f6;
+    .btn-changes-card {
+      width: 100%;
+      padding: 9px;
+      background: #f8fafc;
       border: 1px solid #e5e7eb;
-      border-radius: 6px;
-      padding: 4px 10px;
-      cursor: pointer;
+      border-radius: 8px;
+      color: #374151;
       font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+      letter-spacing: 0.2px;
     }
 
-    .btn-changes-inline:active { background: #e5e7eb; }
+    .btn-changes-card:active { background: #f1f5f9; }
 
     /* ── LINEUP STATS ── */
     .lineup-stats-team {
@@ -1309,13 +1305,10 @@
 
 <!-- Current batter -->
 <div class="card" id="batterCard" style="display:none;">
-  <div class="batter-card-header">
-    <span class="batter-label">At Bat</span>
-    <button class="btn-changes-inline" onclick="openChanges()">Changes ↕</button>
-  </div>
   <div class="batter-row">
     <button class="batter-nav" onclick="manualPrevBatter()">◀</button>
     <div class="batter-info">
+      <span class="batter-label">At Bat</span>
       <div class="batter-main-line">
         <span class="batter-order-num" id="batterOrderNum"></span>
         <span class="batter-name" id="batterName"></span>
@@ -1325,6 +1318,8 @@
     </div>
     <button class="batter-nav" onclick="manualNextBatter()">▶</button>
   </div>
+  <hr class="count-divider" style="margin:10px 0 8px;">
+  <button class="btn-changes-card" onclick="openChanges()">Lineup Changes ↕</button>
 </div>
 
 <!-- Main action buttons -->
