@@ -1852,6 +1852,8 @@
     recordStat(baseIdx === 3 ? 'hr' : 'h');
     const team    = battingTeam();
     const batterP = currentBatterPlayer(); // capture before advance
+    if (batterP && baseIdx === 1) batterP['2b'] = (batterP['2b'] || 0) + 1;
+    if (batterP && baseIdx === 2) batterP['3b'] = (batterP['3b'] || 0) + 1;
     setLastBatter(team);
 
     if (baseIdx === 3) {
@@ -2441,6 +2443,8 @@
             if (p.k         === undefined) p.k         = 0;
             if (p.po        === undefined) p.po        = 0;
             if (p.pitchOuts === undefined) p.pitchOuts = 0;
+            if (p['2b']     === undefined) p['2b']     = 0;
+            if (p['3b']     === undefined) p['3b']     = 0;
           });
         });
         // Migrate old team-level pitcherOuts to per-player pitchOuts
@@ -2522,15 +2526,21 @@
         <table class="lineup-stats-table">
           <thead><tr>
             <th>#</th><th class="lss-name">Name</th>
-            <th>AB</th><th>H</th><th>AVG</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>PO</th>
+            <th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>OBP</th><th>OPS</th><th>PO</th>
           </tr></thead><tbody>`;
       players.forEach((p, i) => {
         const ab = p.ab||0, h = p.h||0, hr = p.hr||0, r = p.r||0, rbi = p.rbi||0, bb = p.bb||0, k = p.k||0, po = p.po||0;
-        const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '—';
+        const d2 = p['2b']||0, d3 = p['3b']||0;
+        const singles = h - d2 - d3 - hr;
+        const obpVal  = (ab + bb) ? (h + bb) / (ab + bb) : null;
+        const slgVal  = ab ? (singles + 2*d2 + 3*d3 + 4*hr) / ab : null;
+        const opsVal  = (obpVal !== null && slgVal !== null) ? obpVal + slgVal : null;
+        const fmtPct  = v => v === null ? '—' : (v >= 1 ? v.toFixed(3) : '.' + String(Math.round(v*1000)).padStart(3,'0'));
         html += `<tr>
           <td>${i+1}</td><td class="lss-name">${p.name || `Player ${i+1}`}</td>
-          <td>${ab}</td><td>${h}</td><td>${avg}</td>
-          <td>${hr}</td><td>${r}</td><td>${rbi}</td><td>${bb}</td><td>${k}</td><td>${po}</td>
+          <td>${ab}</td><td>${h}</td><td>${d2}</td><td>${d3}</td>
+          <td>${hr}</td><td>${r}</td><td>${rbi}</td><td>${bb}</td><td>${k}</td>
+          <td>${fmtPct(obpVal)}</td><td>${fmtPct(opsVal)}</td><td>${po}</td>
         </tr>`;
       });
       html += `</tbody></table>`;
@@ -2690,7 +2700,7 @@
         <table class="lineup-stats-table">
           <thead><tr>
             <th>#</th><th class="lss-name">Name</th>
-            <th>AB</th><th>H</th><th>AVG</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>PO</th>
+            <th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>OBP</th><th>OPS</th><th>PO</th>
           </tr></thead><tbody>`;
 
       lineup.forEach((p, i) => {
@@ -2698,13 +2708,18 @@
         const ab  = p.ab  || 0, h   = p.h   || 0;
         const hr  = p.hr  || 0, r   = p.r   || 0;
         const rbi = p.rbi || 0, bb  = p.bb  || 0, k = p.k || 0, po = p.po || 0;
-        const avg = ab ? '.' + String(Math.round(h/ab*1000)).padStart(3,'0') : '—';
+        const d2  = p['2b'] || 0, d3 = p['3b'] || 0;
+        const singles = h - d2 - d3 - hr;
+        const obpVal  = (ab + bb) ? (h + bb) / (ab + bb) : null;
+        const slgVal  = ab ? (singles + 2*d2 + 3*d3 + 4*hr) / ab : null;
+        const opsVal  = (obpVal !== null && slgVal !== null) ? obpVal + slgVal : null;
+        const fmtPct  = v => v === null ? '—' : (v >= 1 ? v.toFixed(3) : '.' + String(Math.round(v*1000)).padStart(3,'0'));
         html += `<tr class="${isCur ? 'lss-current' : ''}">
           <td>${i + 1}</td>
           <td class="lss-name">${p.name || `Player ${i+1}`}</td>
-          <td>${ab}</td><td>${h}</td><td>${avg}</td>
+          <td>${ab}</td><td>${h}</td><td>${d2}</td><td>${d3}</td>
           <td>${hr}</td><td>${r}</td><td>${rbi}</td>
-          <td>${bb}</td><td>${k}</td><td>${po}</td>
+          <td>${bb}</td><td>${k}</td><td>${fmtPct(obpVal)}</td><td>${fmtPct(opsVal)}</td><td>${po}</td>
         </tr>`;
       });
 
@@ -2858,7 +2873,7 @@
   // ─── SHARE STATS ───────────────────────────────────────────────────────────
   function buildStatsCanvas() {
     const scale = 2;
-    const W = 600;
+    const W = 720;
     const PAD = 16;
     const HEADER_H = 90;
     const TEAM_BAR_H = 36;
@@ -2907,17 +2922,19 @@
     const colDefs = [
       { key: 'num',  x: PAD + 12, align: 'center', label: '#'   },
       { key: 'name', x: PAD + 28, align: 'left',   label: 'Name'},
-      { key: 'ab',   x: 248,      align: 'right',  label: 'AB'  },
-      { key: 'h',    x: 284,      align: 'right',  label: 'H'   },
-      { key: 'avg',  x: 332,      align: 'right',  label: 'AVG' },
-      { key: 'hr',   x: 368,      align: 'right',  label: 'HR'  },
-      { key: 'r',    x: 400,      align: 'right',  label: 'R'   },
-      { key: 'rbi',  x: 438,      align: 'right',  label: 'RBI' },
-      { key: 'bb',   x: 474,      align: 'right',  label: 'BB'  },
-      { key: 'k',    x: 504,      align: 'right',  label: 'K'   },
-      { key: 'po',   x: 540,      align: 'right',  label: 'PO'  },
+      { key: 'ab',   x: 260,      align: 'right',  label: 'AB'  },
+      { key: 'h',    x: 290,      align: 'right',  label: 'H'   },
+      { key: 'd2b',  x: 318,      align: 'right',  label: '2B'  },
+      { key: 'd3b',  x: 346,      align: 'right',  label: '3B'  },
+      { key: 'hr',   x: 376,      align: 'right',  label: 'HR'  },
+      { key: 'r',    x: 406,      align: 'right',  label: 'R'   },
+      { key: 'rbi',  x: 444,      align: 'right',  label: 'RBI' },
+      { key: 'bb',   x: 478,      align: 'right',  label: 'BB'  },
+      { key: 'k',    x: 508,      align: 'right',  label: 'K'   },
+      { key: 'obp',  x: 552,      align: 'right',  label: 'OBP' },
+      { key: 'ops',  x: 596,      align: 'right',  label: 'OPS' },
     ];
-    const nameMaxW = 175;
+    const nameMaxW = 190;
 
     let y = HEADER_H + PAD;
 
@@ -2952,7 +2969,12 @@
         const ab  = p.ab  || 0, h   = p.h   || 0;
         const hr  = p.hr  || 0, r   = p.r   || 0;
         const rbi = p.rbi || 0, bb  = p.bb  || 0, k = p.k || 0;
-        const avg = ab ? '.' + String(Math.round(h / ab * 1000)).padStart(3, '0') : '.—';
+        const d2  = p['2b'] || 0, d3 = p['3b'] || 0;
+        const singles = h - d2 - d3 - hr;
+        const obpVal  = (ab + bb) ? (h + bb) / (ab + bb) : null;
+        const slgVal  = ab ? (singles + 2*d2 + 3*d3 + 4*hr) / ab : null;
+        const opsVal  = (obpVal !== null && slgVal !== null) ? obpVal + slgVal : null;
+        const fmtPct  = v => v === null ? '—' : (v >= 1 ? v.toFixed(3) : '.' + String(Math.round(v*1000)).padStart(3,'0'));
 
         ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#f8fafc';
         ctx.fillRect(PAD, y, W - PAD * 2, ROW_H);
@@ -2969,8 +2991,9 @@
         ctx.textBaseline = 'middle';
 
         const rowVals = { num: String(i + 1), name: p.name || `Player ${i+1}`,
-          ab: String(ab), h: String(h), avg, hr: String(hr),
-          r: String(r), rbi: String(rbi), bb: String(bb), k: String(k), po: String(p.po || 0) };
+          ab: String(ab), h: String(h), d2b: String(d2), d3b: String(d3), hr: String(hr),
+          r: String(r), rbi: String(rbi), bb: String(bb), k: String(k),
+          obp: fmtPct(obpVal), ops: fmtPct(opsVal) };
 
         colDefs.forEach(col => {
           ctx.textAlign = col.align;
