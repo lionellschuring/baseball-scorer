@@ -169,19 +169,21 @@
     .inning-badge {
       display: flex;
       align-items: center;
-      justify-content: center;
-      gap: 8px;
+      justify-content: space-between;
       cursor: pointer;
       padding: 4px 0;
       border-radius: 6px;
-      position: relative;
     }
 
     .inning-badge:active { background: #f9fafb; }
 
+    .inning-badge-center {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
     .scoreboard-chevron {
-      position: absolute;
-      right: 0;
       font-size: 0.8rem;
       font-weight: 600;
       color: #374151;
@@ -2220,14 +2222,16 @@
     </div>
   </div>
   <div class="inning-badge" onclick="toggleScoreboard()">
-    <div class="half-arrows">
-      <div class="arrow-up"   id="arrowUp"></div>
-      <div class="arrow-down" id="arrowDown"></div>
+    <div class="inning-badge-center">
+      <div class="half-arrows">
+        <div class="arrow-up"   id="arrowUp"></div>
+        <div class="arrow-down" id="arrowDown"></div>
+      </div>
+      <div class="inning-text" id="inningText">TOP — 1st INNING</div>
     </div>
-    <div class="inning-text" id="inningText">TOP — 1st INNING</div>
-    <span id="scoreboardChevron" class="scoreboard-chevron">▲</span>
+    <span id="scoreboardChevron" class="scoreboard-chevron">▼</span>
   </div>
-  <div id="scoreboardWrap" style="margin-top:8px; border-top:1px solid #f3f4f6; padding-top:8px;">
+  <div id="scoreboardWrap" style="display:none; margin-top:8px; border-top:1px solid #f3f4f6; padding-top:8px;">
     <table id="scoreboard"></table>
   </div>
 </div>
@@ -3614,7 +3618,7 @@
   }
 
   // ─── SCOREBOARD TOGGLE ─────────────────────────────────────────────────────
-  let scoreboardOpen = true;
+  let scoreboardOpen = false;
 
   function toggleScoreboard() {
     scoreboardOpen = !scoreboardOpen;
