@@ -2001,12 +2001,17 @@
   }
 
   function nextHalf() {
-    advanceHalf();
-    render();
+    showActionSheet('Skip to next half inning?', [
+      { label: 'Next Half ▶', cls: 'as-btn-advance', fn() { advanceHalf(); render(); } },
+      { label: 'Cancel',      cls: 'as-btn-cancel',  fn() {} }
+    ]);
   }
 
   function newGame() {
-    showSetup(false);
+    showActionSheet('Start a new game?', [
+      { label: 'New Game — discard current', cls: 'as-btn-out', fn() { showSetup(false); } },
+      { label: 'Cancel',                     cls: 'as-btn-cancel', fn() {} }
+    ]);
   }
 
   // ─── SETUP SCREEN ──────────────────────────────────────────────────────────
@@ -2260,6 +2265,14 @@
 
   function doSaveGame() {
     const n = teamNames();
+    showActionSheet(`End game: ${n.away} ${totalRuns('away')} – ${totalRuns('home')} ${n.home}?`, [
+      { label: 'End Game & Save to History', cls: 'as-btn-out', fn() { _doSaveGame(); } },
+      { label: 'Cancel',                     cls: 'as-btn-cancel', fn() {} }
+    ]);
+  }
+
+  function _doSaveGame() {
+    const n = teamNames();
     const entry = {
       id:        Date.now(),
       date:      new Date().toLocaleDateString('en-US', {month:'short', day:'numeric', year:'numeric'}),
@@ -2282,6 +2295,13 @@
   }
 
   function deleteHistoryEntry(id) {
+    showActionSheet('Delete this game from history?', [
+      { label: 'Delete Permanently', cls: 'as-btn-out',    fn() { _deleteHistoryEntry(id); } },
+      { label: 'Cancel',             cls: 'as-btn-cancel', fn() {} }
+    ]);
+  }
+
+  function _deleteHistoryEntry(id) {
     const history = getHistory().filter(e => e.id !== id);
     try { localStorage.setItem('bb_history', JSON.stringify(history)); } catch(e) {}
     renderHistory();
