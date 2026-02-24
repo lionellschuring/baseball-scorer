@@ -866,6 +866,23 @@
 
     .batter-nav:active { background: #f3f4f6; }
 
+    .btn-changes-card {
+      width: 100%;
+      margin-top: 8px;
+      padding: 7px;
+      background: #eff6ff;
+      border: 1px solid #bfdbfe;
+      border-radius: 8px;
+      color: #3b82f6;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+      text-align: center;
+    }
+
+    .btn-changes-card:active { background: #dbeafe; }
+
     /* ── LINEUP STATS ── */
     .lineup-stats-team {
       font-size: 0.7rem;
@@ -1316,6 +1333,8 @@
     </div>
     <button class="batter-nav" onclick="manualNextBatter()">▶</button>
   </div>
+  <hr class="count-divider" style="margin:10px 0 8px;">
+  <button class="btn-changes-card" onclick="openChanges()">Lineup Changes ↕</button>
 </div>
 
 <!-- Main action buttons -->
@@ -1334,10 +1353,9 @@
   <button class="btn-sm" onclick="nextHalf()">Next Half ▶</button>
 </div>
 
-<!-- Lineup Stats + Changes -->
+<!-- Lineup Stats + Share -->
 <div class="history-header">
   <button class="history-toggle-btn" id="lineupStatsToggle" onclick="toggleLineupStats()">Lineup Stats ▼</button>
-  <button class="btn-transfer" onclick="openChanges()">Changes ↕</button>
   <button class="btn-transfer" onclick="shareStats()">Share ↗</button>
 </div>
 <div id="lineupStatsList" style="display:none; flex-direction:column; gap:6px;"></div>
