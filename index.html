@@ -1869,30 +1869,91 @@
       advanceBatter();
       showToast('Home Run! 🎉', 2200);
     } else {
-      // Advance existing runners by the number of bases in the hit.
-      // Iterate 3rd → 1st to avoid overwriting a runner we haven't moved yet.
-      const advance = baseIdx + 1; // 1 = single, 2 = double, 3 = triple
+      const hitNames = ['Single', 'Double', 'Triple'];
+      const advance  = baseIdx + 1;
+
+      // Snapshot existing runners 3rd→1st, then clear them from the diamond
+      const runners = [];
       for (let i = 2; i >= 0; i--) {
-        if (!state.bases[i]) continue;
-        const dest = i + advance;
-        if (dest >= 3) {
-          scoreRunner(i);  // runner reaches home → scores
-          creditRbi(team); // RBI to the hitter
-        } else {
-          state.bases[dest] = state.bases[i];
-          state.bases[i]    = null;
+        if (state.bases[i]) {
+          runners.push({ fromBase: i, runner: state.bases[i] });
+          state.bases[i] = null;
         }
       }
-      // Place the batter at their base
-      const runner = makeBatterRunner();
+
+      // Capture batter runner before advancing the batting order
+      const batterRunner = makeBatterRunner();
       advanceBatter();
-      state.bases[baseIdx] = runner;
-      const hitNames = ['Single', 'Double', 'Triple'];
+      state.balls   = 0;
+      state.strikes = 0;
       showToast(hitNames[baseIdx] + '!');
+
+      if (runners.length === 0) {
+        state.bases[baseIdx] = batterRunner;
+        render();
+      } else {
+        render(); // refresh diamond + count before showing sheets
+        confirmRunnerPositions(runners, 0, advance, team, batterRunner, baseIdx);
+      }
     }
-    state.balls   = 0;
-    state.strikes = 0;
-    render();
+  }
+
+  // Chains action sheets for each existing runner asking where they ended up,
+  // then places the batter once all runners are confirmed.
+  function confirmRunnerPositions(runners, idx, advance, team, batterRunner, batterBase) {
+    if (idx >= runners.length) {
+      state.bases[batterBase] = batterRunner;
+      render();
+      return;
+    }
+
+    const { fromBase, runner } = runners[idx];
+    const name        = runner.name || `#${runner.orderNum}`;
+    const baseLabels  = ['1st base', '2nd base', '3rd base'];
+    const expectedDest = Math.min(3, fromBase + advance);
+    const next = () => confirmRunnerPositions(runners, idx + 1, advance, team, batterRunner, batterBase);
+
+    // Build option list: expected destination first (green), then other forward
+    // options (blue), then "held at original base" (grey) as a safety valve.
+    const forwardDests = [expectedDest,
+      ...[3, 2, 1, 0].filter(d => d > fromBase && d !== expectedDest)];
+
+    const options = forwardDests.map(d => {
+      const isExpected = d === expectedDest;
+      if (d === 3) {
+        return {
+          label: '🏠 Scored',
+          cls:   isExpected ? 'as-btn-score' : 'as-btn-advance',
+          fn() { scoreRunnerObject(runner, team); creditRbi(team); render(); next(); }
+        };
+      }
+      return {
+        label: `→ ${baseLabels[d]}`,
+        cls:   isExpected ? 'as-btn-score' : 'as-btn-advance',
+        fn() { state.bases[d] = runner; render(); next(); }
+      };
+    });
+
+    options.push({
+      label: `↩ Held at ${baseLabels[fromBase]}`,
+      cls:   'as-btn-cancel',
+      fn() { state.bases[fromBase] = runner; render(); next(); }
+    });
+
+    showActionSheet(`${name} — where did they end up?`, options);
+  }
+
+  // Score a runner object directly (used when runner is no longer in state.bases)
+  function scoreRunnerObject(runner, team) {
+    const rTeam = runner.team || team;
+    const rLineup = state.lineup[rTeam];
+    if (rLineup && runner.idx !== undefined && rLineup[runner.idx]) {
+      rLineup[runner.idx].r = (rLineup[runner.idx].r || 0) + 1;
+    }
+    const inn = state.inning - 1;
+    ensureInning(inn);
+    if (state.scorecard[inn][rTeam] === null) state.scorecard[inn][rTeam] = 0;
+    state.scorecard[inn][rTeam]++;
   }
 
   function adjustRun(team, delta) {
