@@ -527,6 +527,10 @@
       border-bottom: 1px solid #f3f4f6;
     }
 
+    .changes-player-row.current-batter {
+      background: #fef2f2;
+    }
+
     .changes-order {
       font-size: 0.72rem;
       color: #9ca3af;
@@ -534,11 +538,21 @@
       text-align: right;
     }
 
+    .current-batter .changes-order {
+      color: #dc2626;
+      font-weight: 700;
+    }
+
     .changes-name {
       flex: 1;
       font-size: 0.85rem;
       color: #111827;
       font-weight: 500;
+    }
+
+    .current-batter .changes-name {
+      color: #dc2626;
+      font-weight: 700;
     }
 
     .changes-sub-btn {
@@ -2322,7 +2336,7 @@
     <button class="batter-nav" onclick="manualNextBatter()">▶</button>
   </div>
   <hr class="count-divider" style="margin:10px 0 8px;">
-  <button class="btn-changes-card" onclick="openChanges()">Lineup Changes ↕</button>
+  <button class="btn-changes-card" onclick="openChanges()">Manage Lineup</button>
   <hr class="count-divider" style="margin:8px 0 8px;">
   <div class="history-header">
     <button class="history-toggle-btn" id="lineupStatsToggle" onclick="toggleLineupStats()">Lineup Stats ▼</button>
@@ -2370,7 +2384,7 @@
 <div class="changes-overlay" id="changesOverlay" onclick="closeChanges()" style="display:none"></div>
 <div class="changes-sheet" id="changesSheet" style="display:none">
   <div class="changes-header">
-    <span class="changes-title">Lineup Changes</span>
+    <span class="changes-title">Manage Lineup</span>
     <button class="changes-done-btn" onclick="closeChanges()">Done</button>
   </div>
   <div id="changesList"></div>
@@ -3736,9 +3750,11 @@
       const lineup = state.lineup[team];
       if (!lineup || lineup.length === 0) return;
       html += `<div class="changes-team-label">${n[team]}</div>`;
+      const curIdx = state.batterIdx[team] ?? 0;
       lineup.forEach((p, i) => {
+        const isCurrent = i === curIdx;
         html += `
-        <div class="changes-player-row" id="cpr-${team}-${i}">
+        <div class="changes-player-row${isCurrent ? ' current-batter' : ''}" id="cpr-${team}-${i}">
           <span class="changes-order">${i + 1}</span>
           <button class="changes-pos-btn" onclick="pickPosition('${team}', ${i})">${escAttr(p.pos || '—')} ▾</button>
           <span class="changes-name">${escAttr(p.name || `Player ${i + 1}`)}</span>
