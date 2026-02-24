@@ -29,7 +29,7 @@
       background: #fff;
       border-radius: 14px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
-      padding: 16px;
+      padding: 14px 16px;
     }
 
     /* ── GAME STATE BAR ── */
@@ -37,9 +37,9 @@
       position: sticky;
       top: 12px;
       z-index: 50;
-      background: #1f2937;
+      background: #0f172a;
       border-radius: 14px;
-      padding: 10px 14px 9px;
+      padding: 11px 14px 10px;
       display: flex;
       flex-direction: column;
       gap: 4px;
@@ -64,8 +64,8 @@
     .gsb-piece.gsb-danger { color: #fca5a5; }
 
     .gsb-sep {
-      font-size: 0.65rem;
-      color: #4b5563;
+      font-size: 0.7rem;
+      color: #334155;
       font-weight: 400;
       flex-shrink: 0;
     }
@@ -366,10 +366,10 @@
       background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 10px;
-      color: #6b7280;
+      color: #374151;
       font-family: inherit;
-      font-size: 0.72rem;
-      font-weight: 500;
+      font-size: 0.75rem;
+      font-weight: 600;
       cursor: pointer;
       text-align: center;
     }
@@ -411,21 +411,6 @@
     }
 
     .btn-new-game:active { background: #f9fafb; }
-
-    .btn-changes {
-      flex: 1;
-      padding: 11px 12px;
-      background: #fff;
-      border: 1.5px solid #3b82f6;
-      border-radius: 10px;
-      color: #3b82f6;
-      font-family: inherit;
-      font-size: 0.82rem;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .btn-changes:active { background: #eff6ff; }
 
     /* ── CHANGES PANEL ── */
     .changes-overlay {
@@ -620,10 +605,10 @@
       background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 10px;
-      color: #6b7280;
+      color: #374151;
       font-family: inherit;
       font-size: 0.8rem;
-      font-weight: 500;
+      font-weight: 600;
       cursor: pointer;
       text-align: left;
     }
@@ -635,10 +620,10 @@
       background: #fff;
       border: 1px solid #e5e7eb;
       border-radius: 10px;
-      color: #6b7280;
+      color: #374151;
       font-family: inherit;
-      font-size: 0.75rem;
-      font-weight: 500;
+      font-size: 0.8rem;
+      font-weight: 600;
       cursor: pointer;
       white-space: nowrap;
     }
@@ -810,11 +795,11 @@
     }
 
     .batter-label {
-      font-size: 0.58rem;
+      font-size: 0.65rem;
       font-weight: 700;
       color: #9ca3af;
       text-transform: uppercase;
-      letter-spacing: 1.2px;
+      letter-spacing: 1px;
     }
 
     .batter-main-line {
@@ -866,22 +851,26 @@
 
     .batter-nav:active { background: #f3f4f6; }
 
-    .btn-changes-card {
-      width: 100%;
-      margin-top: 8px;
-      padding: 7px;
-      background: #eff6ff;
-      border: 1px solid #bfdbfe;
-      border-radius: 8px;
-      color: #3b82f6;
-      font-family: inherit;
-      font-size: 0.75rem;
-      font-weight: 600;
-      cursor: pointer;
-      text-align: center;
+    .batter-card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
     }
 
-    .btn-changes-card:active { background: #dbeafe; }
+    .btn-changes-inline {
+      font-size: 0.7rem;
+      font-weight: 600;
+      color: #6b7280;
+      background: #f3f4f6;
+      border: 1px solid #e5e7eb;
+      border-radius: 6px;
+      padding: 4px 10px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .btn-changes-inline:active { background: #e5e7eb; }
 
     /* ── LINEUP STATS ── */
     .lineup-stats-team {
@@ -1212,11 +1201,11 @@
 <div id="gameStateBar" class="game-state-bar">
   <div class="gsb-top">
     <span class="gsb-piece" id="gsbInning"></span>
-    <span class="gsb-sep">|</span>
+    <span class="gsb-sep">·</span>
     <span class="gsb-piece" id="gsbOuts"></span>
-    <span class="gsb-sep">|</span>
+    <span class="gsb-sep">·</span>
     <span class="gsb-piece" id="gsbCount"></span>
-    <span class="gsb-sep">|</span>
+    <span class="gsb-sep">·</span>
     <span class="gsb-piece" id="gsbRunners"></span>
   </div>
   <div class="gsb-batter" id="gsbBatter"></div>
@@ -1249,7 +1238,7 @@
 </div>
 
 <!-- Scoreboard -->
-<div class="card" style="padding: 12px 14px;">
+<div class="card" style="padding: 10px 12px;">
   <table id="scoreboard"></table>
 </div>
 
@@ -1319,11 +1308,14 @@
 </div>
 
 <!-- Current batter -->
-<div class="card" id="batterCard" style="display:none; padding:12px 16px;">
+<div class="card" id="batterCard" style="display:none;">
+  <div class="batter-card-header">
+    <span class="batter-label">At Bat</span>
+    <button class="btn-changes-inline" onclick="openChanges()">Changes ↕</button>
+  </div>
   <div class="batter-row">
     <button class="batter-nav" onclick="manualPrevBatter()">◀</button>
     <div class="batter-info">
-      <span class="batter-label">At Bat</span>
       <div class="batter-main-line">
         <span class="batter-order-num" id="batterOrderNum"></span>
         <span class="batter-name" id="batterName"></span>
@@ -1333,8 +1325,6 @@
     </div>
     <button class="batter-nav" onclick="manualNextBatter()">▶</button>
   </div>
-  <hr class="count-divider" style="margin:10px 0 8px;">
-  <button class="btn-changes-card" onclick="openChanges()">Lineup Changes ↕</button>
 </div>
 
 <!-- Main action buttons -->
