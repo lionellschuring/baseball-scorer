@@ -907,8 +907,14 @@
       margin-bottom: 8px;
     }
 
+    .lss-scroll-wrap {
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+
     .lineup-stats-table {
-      width: 100%;
+      width: max-content;
+      min-width: 100%;
       font-size: 0.76rem;
       border-collapse: collapse;
     }
@@ -2523,7 +2529,7 @@
       const oppPlayers = lu[oppTeam] || [];
       html += `<div>
         <div class="lineup-stats-team">${teamName}</div>
-        <table class="lineup-stats-table">
+        <div class="lss-scroll-wrap"><table class="lineup-stats-table">
           <thead><tr>
             <th>#</th><th class="lss-name">Name</th>
             <th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>OBP</th><th>OPS</th><th>PO</th>
@@ -2543,7 +2549,7 @@
           <td>${fmtPct(obpVal)}</td><td>${fmtPct(opsVal)}</td><td>${po}</td>
         </tr>`;
       });
-      html += `</tbody></table>`;
+      html += `</tbody></table></div>`;
 
       const pitchers = players.filter(p => (p.pitchOuts || 0) > 0 || (p.pos && p.pos.toUpperCase() === 'P'));
       if (pitchers.length > 0) {
@@ -2553,7 +2559,7 @@
         const totH  = oppPlayers.reduce((s, p) => s + (p.h  || 0) + (p.hr || 0), 0);
         const totR  = team === 'away' ? (e.homeRuns || 0) : (e.awayRuns || 0);
         html += `<div class="pitching-header">Pitching</div>
-        <table class="lineup-stats-table">
+        <div class="lss-scroll-wrap"><table class="lineup-stats-table">
           <thead><tr>
             <th class="lss-name">Pitcher</th>
             <th>IP</th><th>H</th><th>R</th><th>K</th><th>BB</th>
@@ -2569,7 +2575,7 @@
             <td>${isCur ? totK : '—'}</td><td>${isCur ? totBB : '—'}</td>
           </tr>`;
         });
-        html += `</tbody></table>`;
+        html += `</tbody></table></div>`;
       }
 
       html += `</div>`;
@@ -2697,7 +2703,7 @@
 
       html += `<div class="lss-team-section">
         <div class="lineup-stats-team">${n[team]}</div>
-        <table class="lineup-stats-table">
+        <div class="lss-scroll-wrap"><table class="lineup-stats-table">
           <thead><tr>
             <th>#</th><th class="lss-name">Name</th>
             <th>AB</th><th>H</th><th>2B</th><th>3B</th><th>HR</th><th>R</th><th>RBI</th><th>BB</th><th>K</th><th>OBP</th><th>OPS</th><th>PO</th>
@@ -2723,7 +2729,7 @@
         </tr>`;
       });
 
-      html += `</tbody></table>`;
+      html += `</tbody></table></div>`;
 
       // Pitching section — all players who pitched this game
       const pitchers = lineup.filter(p => (p.pitchOuts || 0) > 0 || (p.pos && p.pos.toUpperCase() === 'P'));
@@ -2734,7 +2740,7 @@
         const totH  = oppLineup.reduce((s, p) => s + (p.h  || 0) + (p.hr || 0), 0);
         const totR  = totalRuns(oppTeam);
         html += `<div class="pitching-header">Pitching</div>
-        <table class="lineup-stats-table">
+        <div class="lss-scroll-wrap"><table class="lineup-stats-table">
           <thead><tr>
             <th class="lss-name">Pitcher</th>
             <th>IP</th><th>H</th><th>R</th><th>K</th><th>BB</th>
@@ -2750,7 +2756,7 @@
             <td>${isCur ? totK : '—'}</td><td>${isCur ? totBB : '—'}</td>
           </tr>`;
         });
-        html += `</tbody></table>`;
+        html += `</tbody></table></div>`;
       }
 
       html += `</div>`;
