@@ -1869,9 +1869,26 @@
       advanceBatter();
       showToast('Home Run! 🎉', 2200);
     } else {
+      // Advance existing runners by the number of bases in the hit.
+      // Iterate 3rd → 1st to avoid overwriting a runner we haven't moved yet.
+      const advance = baseIdx + 1; // 1 = single, 2 = double, 3 = triple
+      for (let i = 2; i >= 0; i--) {
+        if (!state.bases[i]) continue;
+        const dest = i + advance;
+        if (dest >= 3) {
+          scoreRunner(i);  // runner reaches home → scores
+          creditRbi(team); // RBI to the hitter
+        } else {
+          state.bases[dest] = state.bases[i];
+          state.bases[i]    = null;
+        }
+      }
+      // Place the batter at their base
       const runner = makeBatterRunner();
       advanceBatter();
       state.bases[baseIdx] = runner;
+      const hitNames = ['Single', 'Double', 'Triple'];
+      showToast(hitNames[baseIdx] + '!');
     }
     state.balls   = 0;
     state.strikes = 0;
