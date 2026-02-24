@@ -1090,6 +1090,14 @@
 
     .btn-clear-lineup:active { background: #fef2f2; }
 
+    .btn-clear-lineup.btn-clear-armed {
+      background: #dc2626;
+      border-color: #dc2626;
+      color: #fff;
+    }
+
+    .btn-clear-lineup.btn-clear-armed:active { background: #b91c1c; }
+
     .btn-swap-teams {
       background: #fff;
       border: 1px solid #c7d2fe;
@@ -3150,7 +3158,21 @@
     renderLineup(team);
   }
 
+  const _clearPending = {};
   function clearLineup(team) {
+    const btn = document.querySelector(`#lineup-${team}`).previousElementSibling
+                  .querySelector('.btn-clear-lineup');
+    if (!_clearPending[team]) {
+      _clearPending[team] = setTimeout(() => {
+        _clearPending[team] = null;
+        if (btn) { btn.textContent = 'Clear'; btn.classList.remove('btn-clear-armed'); }
+      }, 3000);
+      if (btn) { btn.textContent = 'Sure?'; btn.classList.add('btn-clear-armed'); }
+      return;
+    }
+    clearTimeout(_clearPending[team]);
+    _clearPending[team] = null;
+    if (btn) { btn.textContent = 'Clear'; btn.classList.remove('btn-clear-armed'); }
     setupLineup[team] = [];
     renderLineup(team);
   }
