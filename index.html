@@ -73,7 +73,7 @@
     .gsb-batter {
       font-size: 0.7rem;
       font-weight: 600;
-      color: #6b7280;
+      color: #d1d5db;
       text-transform: uppercase;
       letter-spacing: 0.4px;
     }
@@ -1507,9 +1507,12 @@
     const lineup = state.lineup[team];
     const p      = currentBatterPlayer();
     if (p && lineup && lineup.length > 0) {
-      const idx = state.batterIdx[team];
+      const idx  = state.batterIdx[team];
       const name = (p.name || `Player ${idx + 1}`).toUpperCase();
-      batterEl.textContent = `BATTER: #${idx + 1} ${name}`;
+      const ab   = p.ab || 0;
+      const h    = p.h  || 0;
+      const avg  = ab ? '.' + String(Math.round(h / ab * 1000)).padStart(3, '0') : '.000';
+      batterEl.textContent = `BATTER: #${idx + 1} ${name}  ·  ${h}-for-${ab}  ${avg}`;
       batterEl.style.display = '';
     } else {
       batterEl.style.display = 'none';
