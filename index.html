@@ -118,7 +118,7 @@
     .score-with-adj {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 12px;
     }
 
     .score-adj {
@@ -383,8 +383,8 @@
     .btn-run    { background: #2563eb; }
     .btn-hit    { background: #f59e0b; }
 
-    /* ── SECONDARY ── */
-    .secondary {
+    /* ── FIELD ACTIONS ── */
+    .field-actions {
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
@@ -1338,6 +1338,11 @@
       </div>
     </div>
   </div>
+  <hr class="count-divider" style="margin:10px 0 8px;">
+  <div class="field-actions">
+    <button class="btn-sm" onclick="resetCount()">Reset Count</button>
+    <button class="btn-sm" onclick="nextHalf()">Next Half ▶</button>
+  </div>
 </div>
 
 <!-- Current batter -->
@@ -1357,6 +1362,12 @@
   </div>
   <hr class="count-divider" style="margin:10px 0 8px;">
   <button class="btn-changes-card" onclick="openChanges()">Lineup Changes ↕</button>
+  <hr class="count-divider" style="margin:8px 0 8px;">
+  <div class="history-header">
+    <button class="history-toggle-btn" id="lineupStatsToggle" onclick="toggleLineupStats()">Lineup Stats ▼</button>
+    <button class="btn-transfer" onclick="shareStats()">Share ↗</button>
+  </div>
+  <div id="lineupStatsList" style="display:none; flex-direction:column; gap:6px; margin-top:8px;"></div>
 </div>
 
 <!-- Main action buttons -->
@@ -1366,19 +1377,6 @@
   <button class="btn btn-out"    onclick="doOut()">Out</button>
   <button class="btn btn-hit"    onclick="doHit()">Hit</button>
 </div>
-
-<!-- Secondary controls -->
-<div class="secondary">
-  <button class="btn-sm" onclick="resetCount()">Reset Count</button>
-  <button class="btn-sm" onclick="nextHalf()">Next Half ▶</button>
-</div>
-
-<!-- Lineup Stats + Share -->
-<div class="history-header">
-  <button class="history-toggle-btn" id="lineupStatsToggle" onclick="toggleLineupStats()">Lineup Stats ▼</button>
-  <button class="btn-transfer" onclick="shareStats()">Share ↗</button>
-</div>
-<div id="lineupStatsList" style="display:none; flex-direction:column; gap:6px;"></div>
 
 <div class="section-divider"><span>Game Controls</span></div>
 
