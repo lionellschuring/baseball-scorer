@@ -939,6 +939,12 @@
       font-weight: 700;
     }
 
+    .lss-team-section + .lss-team-section {
+      border-top: 1px solid #f3f4f6;
+      padding-top: 10px;
+      margin-top: 4px;
+    }
+
     .pitching-header {
       font-size: 0.68rem;
       font-weight: 700;
@@ -2492,7 +2498,7 @@
       const oppTeam = team === 'away' ? 'home' : 'away';
       const oppLineup = state.lineup[oppTeam] || [];
 
-      html += `<div class="card" style="padding:12px 14px;">
+      html += `<div class="lss-team-section">
         <div class="lineup-stats-team">${n[team]}</div>
         <table class="lineup-stats-table">
           <thead><tr>
