@@ -1170,6 +1170,50 @@
       gap: 7px;
     }
 
+    /* ── BENCH PICKS (in sub form) ── */
+    .bench-pick-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 5px;
+      width: 100%;
+    }
+
+    .bench-pick-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      background: #fff;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      padding: 5px 8px;
+      font-family: inherit;
+      font-size: 0.75rem;
+      font-weight: 500;
+      color: #111827;
+      cursor: pointer;
+      white-space: nowrap;
+    }
+
+    .bench-pick-btn:active { background: #f3f4f6; }
+
+    .bench-pick-pos {
+      font-size: 0.65rem;
+      color: #6b7280;
+      background: #f3f4f6;
+      padding: 1px 4px;
+      border-radius: 3px;
+    }
+
+    .bench-form-label {
+      width: 100%;
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: #9ca3af;
+      text-transform: uppercase;
+      letter-spacing: 0.6px;
+      margin-bottom: 2px;
+    }
+
     /* ── TOAST ── */
     #toast {
       position: fixed;
@@ -1208,6 +1252,11 @@
       <button class="btn-add-player" onclick="addPlayer('away')">+ Add Player</button>
     </div>
     <div class="player-list" id="lineup-away"></div>
+    <div class="setup-lineup-bar" style="margin-top:12px;">
+      <span class="setup-section-label" style="margin-bottom:0">Bench</span>
+      <button class="btn-add-player" onclick="addBenchPlayer('away')">+ Add Player</button>
+    </div>
+    <div class="player-list" id="bench-away"></div>
   </div>
 
   <div class="card">
@@ -1219,6 +1268,11 @@
       <button class="btn-add-player" onclick="addPlayer('home')">+ Add Player</button>
     </div>
     <div class="player-list" id="lineup-home"></div>
+    <div class="setup-lineup-bar" style="margin-top:12px;">
+      <span class="setup-section-label" style="margin-bottom:0">Bench</span>
+      <button class="btn-add-player" onclick="addBenchPlayer('home')">+ Add Player</button>
+    </div>
+    <div class="player-list" id="bench-home"></div>
   </div>
 
   <button class="btn-start-game" onclick="startGame()">⚾ Play Ball</button>
@@ -1436,6 +1490,7 @@
       pitches:   0,
       scorecard: Array.from({length: 9}, () => ({away: null, home: null})),
       lineup:     { away: [], home: [] },
+      bench:      { away: [], home: [] },
       batterIdx:  { away: 0, home: 0 },
       lastBatter: { away: null, home: null }
     };
@@ -2030,21 +2085,21 @@
   // ─── SETUP SCREEN ──────────────────────────────────────────────────────────
   const POSITIONS = ['—','P','C','1B','2B','3B','SS','LF','CF','RF','DH'];
   let setupLineup = { away: [], home: [] };
+  let setupBench  = { away: [], home: [] };
 
   function showSetup(isFirstLaunch) {
     document.getElementById('setupAwayInput').value =
       document.getElementById('awayInput').value.trim() || 'Away';
     document.getElementById('setupHomeInput').value =
       document.getElementById('homeInput').value.trim() || 'Home';
-    // Seed lineup from saved state if available
-    if (state.lineup) {
-      setupLineup = JSON.parse(JSON.stringify(state.lineup));
-    } else {
-      setupLineup = { away: [], home: [] };
-    }
+    // Seed lineup + bench from saved state if available
+    setupLineup = state.lineup ? JSON.parse(JSON.stringify(state.lineup)) : { away: [], home: [] };
+    setupBench  = state.bench  ? JSON.parse(JSON.stringify(state.bench))  : { away: [], home: [] };
     document.getElementById('continueBtn').style.display = isFirstLaunch ? 'none' : '';
     renderLineup('away');
     renderLineup('home');
+    renderBench('away');
+    renderBench('home');
     document.getElementById('mainScreen').style.display  = 'none';
     document.getElementById('setupScreen').style.display = 'flex';
   }
@@ -2057,11 +2112,18 @@
   function startGame() {
     saveLineupInputs('away');
     saveLineupInputs('home');
+    saveBenchInputs('away');
+    saveBenchInputs('home');
     state = freshState();
     // Deep copy lineup and add fresh stat counters
     state.lineup = {
       away: setupLineup.away.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0, po:0, pitchOuts:0 })),
       home: setupLineup.home.map(p => ({ name: p.name, pos: p.pos, ab:0, h:0, hr:0, r:0, rbi:0, bb:0, k:0, po:0, pitchOuts:0 }))
+    };
+    // Copy bench (no stat counters needed)
+    state.bench = {
+      away: setupBench.away.filter(p => p.name).map(p => ({ name: p.name, pos: p.pos || '—' })),
+      home: setupBench.home.filter(p => p.name).map(p => ({ name: p.name, pos: p.pos || '—' }))
     };
     document.getElementById('awayInput').value =
       document.getElementById('setupAwayInput').value.trim() || 'Away';
@@ -2124,6 +2186,52 @@
     saveLineupInputs(team);
     setupLineup[team].splice(idx, 1);
     renderLineup(team);
+  }
+
+  // ─── BENCH ROSTER ───────────────────────────────────────────────────────────
+  function saveBenchInputs(team) {
+    const list = document.getElementById('bench-' + team);
+    if (!list) return;
+    list.querySelectorAll('.player-row').forEach((row, i) => {
+      if (!setupBench[team][i]) return;
+      setupBench[team][i].name = row.querySelector('.player-name-input').value.trim();
+      setupBench[team][i].pos  = row.querySelector('.player-pos-select').value;
+    });
+  }
+
+  function renderBench(team) {
+    const list = document.getElementById('bench-' + team);
+    if (!list) return;
+    if (setupBench[team].length === 0) {
+      list.innerHTML = '<div class="player-list-empty">No bench players added</div>';
+      return;
+    }
+    list.innerHTML = setupBench[team].map((p, i) => {
+      const opts = POSITIONS.map(pos =>
+        `<option${p.pos === pos ? ' selected' : ''}>${escAttr(pos)}</option>`
+      ).join('');
+      return `<div class="player-row">
+        <input class="player-name-input" placeholder="Name" value="${escAttr(p.name)}"
+               oninput="saveBenchInputs('${team}')">
+        <select class="player-pos-select" onchange="saveBenchInputs('${team}')">${opts}</select>
+        <button class="player-remove" onclick="removeBenchPlayer('${team}', ${i})">✕</button>
+      </div>`;
+    }).join('');
+  }
+
+  function addBenchPlayer(team) {
+    saveBenchInputs(team);
+    setupBench[team].push({ name: '', pos: '—' });
+    renderBench(team);
+    const list = document.getElementById('bench-' + team);
+    const inputs = list.querySelectorAll('.player-name-input');
+    if (inputs.length) inputs[inputs.length - 1].focus();
+  }
+
+  function removeBenchPlayer(team, idx) {
+    saveBenchInputs(team);
+    setupBench[team].splice(idx, 1);
+    renderBench(team);
   }
 
   // ─── DRAG-TO-REORDER ───────────────────────────────────────────────────────
@@ -2235,6 +2343,7 @@
       if (saved && saved.state) {
         state = saved.state;
         if (!state.lineup)    state.lineup    = { away: [], home: [] };
+        if (!state.bench)     state.bench     = { away: [], home: [] };
         if (!state.batterIdx) state.batterIdx = { away: 0, home: 0 };
         // Migrate old boolean bases to runner objects
         state.bases = (state.bases || [null,null,null]).map(b => {
@@ -2588,6 +2697,18 @@
           <button class="changes-sub-btn" onclick="toggleSubForm('${team}', ${i})">Sub ↕</button>
         </div>
         <div class="changes-sub-form" id="csf-${team}-${i}" style="display:none">
+          ${(() => {
+            const bench = (state.bench && state.bench[team]) || [];
+            if (!bench.length) return '';
+            return `<div class="bench-form-label">From bench</div>
+              <div class="bench-pick-row">
+                ${bench.map((b, bi) => `
+                  <button class="bench-pick-btn" onclick="fillFromBench('${team}', ${i}, ${bi})">
+                    ${escAttr(b.name || '?')} <span class="bench-pick-pos">${escAttr(b.pos || '—')}</span>
+                  </button>`).join('')}
+              </div>
+              <div class="bench-form-label">Or enter name</div>`;
+          })()}
           <input class="changes-sub-input" id="csi-${team}-${i}"
             placeholder="New player name" autocomplete="off" />
           <select class="player-pos-select" id="csp-${team}-${i}">
@@ -2616,6 +2737,15 @@
     showActionSheet(`${name} — Position`, buttons);
   }
 
+  function fillFromBench(team, lineupIdx, benchIdx) {
+    const b = state.bench[team][benchIdx];
+    const nameInput = document.getElementById(`csi-${team}-${lineupIdx}`);
+    const posInput  = document.getElementById(`csp-${team}-${lineupIdx}`);
+    nameInput.value = b.name || '';
+    nameInput.dataset.benchIdx = benchIdx;
+    if (b.pos && POSITIONS.includes(b.pos)) posInput.value = b.pos;
+  }
+
   function toggleSubForm(team, idx) {
     const form = document.getElementById(`csf-${team}-${idx}`);
     const isOpen = form.style.display !== 'none';
@@ -2632,12 +2762,18 @@
     const posInput  = document.getElementById(`csp-${team}-${idx}`);
     const newName   = nameInput.value.trim();
     if (!newName) { nameInput.focus(); return; }
-    const outName   = state.lineup[team][idx].name || `Player ${idx + 1}`;
+    // If selected from bench, remove that player from bench
+    const bi = nameInput.dataset.benchIdx !== undefined ? parseInt(nameInput.dataset.benchIdx) : -1;
+    if (bi >= 0 && state.bench[team] && state.bench[team][bi]) {
+      state.bench[team].splice(bi, 1);
+    }
+    const outName = state.lineup[team][idx].name || `Player ${idx + 1}`;
     state.lineup[team][idx] = {
       name: newName, pos: posInput.value,
       ab: 0, h: 0, hr: 0, r: 0, rbi: 0, bb: 0, k: 0, po: 0, pitchOuts: 0
     };
     showToast(`${newName} in (replaces ${outName})`);
+    render();
     renderChangesPanel();
   }
 
