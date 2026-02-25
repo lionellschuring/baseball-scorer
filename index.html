@@ -3468,6 +3468,100 @@
     document.addEventListener('touchend',  onTouchEnd);
   }
 
+  function initChangeDrag(team) {
+    const container = document.getElementById('cpl-' + team);
+    if (!container) return;
+    container.querySelectorAll('.drag-handle').forEach((handle, idx) => {
+      handle.addEventListener('mousedown',  (e) => startChangeDrag(e, team, idx, e.clientY));
+      handle.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        startChangeDrag(e, team, idx, e.touches[0].clientY);
+      }, { passive: false });
+    });
+  }
+
+  function startChangeDrag(e, team, fromIdx, startClientY) {
+    // Close any open sub-forms before dragging
+    document.querySelectorAll('[id^="csf-"]').forEach(el => el.style.display = 'none');
+
+    const container = document.getElementById('cpl-' + team);
+    const rows      = [...container.querySelectorAll('.changes-player-row')];
+    const srcRow    = rows[fromIdx];
+    const srcRect   = srcRow.getBoundingClientRect();
+
+    const mirror = document.createElement('div');
+    mirror.className   = 'drag-mirror';
+    mirror.style.width = srcRect.width + 'px';
+    mirror.style.top   = srcRect.top  + 'px';
+    mirror.style.left  = srcRect.left + 'px';
+    mirror.innerHTML   = srcRow.innerHTML;
+    document.body.appendChild(mirror);
+
+    srcRow.classList.add('is-dragging');
+
+    let lastClientY = startClientY;
+
+    function getDropIdx(clientY) {
+      const allRows = [...container.querySelectorAll('.changes-player-row')];
+      for (let i = 0; i < allRows.length; i++) {
+        const r = allRows[i].getBoundingClientRect();
+        if (clientY < r.top + r.height * 0.5) return i;
+      }
+      return allRows.length;
+    }
+
+    function onMove(clientY) {
+      const dy = clientY - lastClientY;
+      mirror.style.top = (parseFloat(mirror.style.top) + dy) + 'px';
+      lastClientY = clientY;
+
+      const dropIdx = getDropIdx(clientY);
+      container.querySelectorAll('.changes-player-row').forEach((r, i) => {
+        r.classList.toggle('drop-above', i === dropIdx && i !== fromIdx);
+      });
+    }
+
+    function onEnd(clientY) {
+      mirror.remove();
+      const allRows = [...container.querySelectorAll('.changes-player-row')];
+      allRows.forEach(r => r.classList.remove('is-dragging', 'drop-above'));
+
+      let dropIdx = getDropIdx(clientY);
+      if (dropIdx !== fromIdx && dropIdx !== fromIdx + 1) {
+        const curIdx = state.batterIdx[team] ?? 0;
+        const item = state.lineup[team].splice(fromIdx, 1)[0];
+        const insertAt = dropIdx > fromIdx ? dropIdx - 1 : dropIdx;
+        state.lineup[team].splice(insertAt, 0, item);
+        // Keep current batter tracking correct through the reorder
+        if (curIdx === fromIdx) {
+          state.batterIdx[team] = insertAt;
+        } else if (fromIdx < curIdx && insertAt >= curIdx) {
+          state.batterIdx[team] = curIdx - 1;
+        } else if (fromIdx > curIdx && insertAt <= curIdx) {
+          state.batterIdx[team] = curIdx + 1;
+        }
+        renderChangesPanel();
+      }
+    }
+
+    function onMouseMove(e) { onMove(e.clientY); }
+    function onMouseUp(e)   { onEnd(e.clientY); cleanup(); }
+    function onTouchMove(e) { e.preventDefault(); onMove(e.touches[0].clientY); }
+    function onTouchEnd(e)  { onEnd(e.changedTouches[0].clientY); cleanup(); }
+
+    function cleanup() {
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup',   onMouseUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend',  onTouchEnd);
+    }
+
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup',   onMouseUp);
+    document.addEventListener('touchmove', onTouchMove, { passive: false });
+    document.addEventListener('touchend',  onTouchEnd);
+  }
+
   // ─── AUTO-SAVE ─────────────────────────────────────────────────────────────
   function saveCurrentGame() {
     try {
@@ -3852,11 +3946,13 @@
       const lineup = state.lineup[team];
       if (!lineup || lineup.length === 0) return;
       html += `<div class="changes-team-label">${n[team]}</div>`;
+      html += `<div id="cpl-${team}">`;
       const curIdx = state.batterIdx[team] ?? 0;
       lineup.forEach((p, i) => {
         const isCurrent = i === curIdx;
         html += `
         <div class="changes-player-row${isCurrent ? ' current-batter' : ''}" id="cpr-${team}-${i}">
+          <span class="drag-handle">⠿</span>
           <span class="changes-order">${i + 1}</span>
           <select class="player-pos-select" onchange="state.lineup['${team}'][${i}].pos=this.value">
             ${POSITIONS.map(pos => `<option${p.pos === pos ? ' selected' : ''}>${escAttr(pos)}</option>`).join('')}
@@ -3886,10 +3982,13 @@
           <button class="changes-cancel-btn"  onclick="toggleSubForm('${team}', ${i})">✗</button>
         </div>`;
       });
+      html += `</div>`;
     });
 
     if (!html) html = '<div style="padding:20px;text-align:center;color:var(--t4)">No lineup set up.</div>';
     list.innerHTML = html;
+    initChangeDrag('away');
+    initChangeDrag('home');
   }
 
 
