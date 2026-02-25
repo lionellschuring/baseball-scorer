@@ -5,6 +5,54 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
   <title>Baseball Scorer</title>
   <style>
+    :root {
+      --bg:         #f1f5f9;
+      --card:       #fff;
+      --card-alt:   #f8fafc;
+      --f9:         #f9fafb;
+      --control:    #f3f4f6;
+      --gsb:        #0f172a;
+      --t1:         #111827;
+      --t2:         #374151;
+      --t3:         #6b7280;
+      --t4:         #9ca3af;
+      --t5:         #d1d5db;
+      --border:     #e5e7eb;
+      --overlay:    rgba(0,0,0,.45);
+      --overlay-lt: rgba(0,0,0,.35);
+      --bg-red:     #fef2f2;
+      --bg-green:   #f0fdf4;
+      --bg-blue:    #eff6ff;
+      --bg-purple:  #fdf4ff;
+      --bg-amber:   #fffbeb;
+      --bg-indigo:  #eef2ff;
+      --toast-bg:   #111827;
+    }
+
+    [data-theme="dark"] {
+      --bg:         #0f172a;
+      --card:       #1e293b;
+      --card-alt:   #162032;
+      --f9:         #1e293b;
+      --control:    #273344;
+      --gsb:        #020617;
+      --t1:         #f1f5f9;
+      --t2:         #cbd5e1;
+      --t3:         #94a3b8;
+      --t4:         #64748b;
+      --t5:         #475569;
+      --border:     #334155;
+      --overlay:    rgba(0,0,0,.65);
+      --overlay-lt: rgba(0,0,0,.55);
+      --bg-red:     #2d1212;
+      --bg-green:   #0d2318;
+      --bg-blue:    #0d1b3e;
+      --bg-purple:  #1e1030;
+      --bg-amber:   #2d1e08;
+      --bg-indigo:  #1e1b4b;
+      --toast-bg:   #334155;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -13,8 +61,8 @@
     }
 
     body {
-      background: #f1f5f9;
-      color: #111827;
+      background: var(--bg);
+      color: var(--t1);
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
       min-height: 100vh;
       max-width: 480px;
@@ -26,7 +74,7 @@
     }
 
     .card {
-      background: #fff;
+      background: var(--card);
       border-radius: 14px;
       box-shadow: 0 1px 4px rgba(0,0,0,0.07), 0 1px 2px rgba(0,0,0,0.04);
       padding: 14px 16px;
@@ -37,7 +85,7 @@
       position: sticky;
       top: 12px;
       z-index: 50;
-      background: #0f172a;
+      background: var(--gsb);
       border-radius: 14px;
       padding: 11px 14px 10px;
       display: flex;
@@ -78,6 +126,19 @@
       letter-spacing: 0.4px;
     }
 
+    .gsb-theme-btn {
+      margin-left: auto;
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 0.9rem;
+      line-height: 1;
+      padding: 2px 4px;
+      opacity: 0.6;
+      color: #f9fafb;
+    }
+    .gsb-theme-btn:active { opacity: 1; }
+
     /* ── HEADER CARD ── */
     .score-header {
       display: grid;
@@ -97,8 +158,8 @@
     .team-input {
       background: transparent;
       border: none;
-      border-bottom: 1.5px solid #e5e7eb;
-      color: #374151;
+      border-bottom: 1.5px solid var(--border);
+      color: var(--t2);
       font-size: 0.72rem;
       font-family: inherit;
       font-weight: 700;
@@ -123,9 +184,9 @@
 
     .score-adj {
       background: transparent;
-      border: 1.5px solid #e5e7eb;
+      border: 1.5px solid var(--border);
       border-radius: 50%;
-      color: #9ca3af;
+      color: var(--t4);
       font-size: 1.0rem;
       width: 28px;
       height: 28px;
@@ -139,15 +200,15 @@
     }
 
     .score-adj:active {
-      background: #f3f4f6;
-      border-color: #d1d5db;
-      color: #374151;
+      background: var(--control);
+      border-color: var(--t5);
+      color: var(--t2);
     }
 
     .team-run-score {
       font-size: 2.6rem;
       font-weight: 800;
-      color: #111827;
+      color: var(--t1);
       line-height: 1;
     }
 
@@ -161,7 +222,7 @@
 
     .score-dash {
       font-size: 1.2rem;
-      color: #d1d5db;
+      color: var(--t5);
       font-weight: 400;
     }
 
@@ -175,7 +236,7 @@
       border-radius: 6px;
     }
 
-    .inning-badge:active { background: #f9fafb; }
+    .inning-badge:active { background: var(--f9); }
 
     .inning-badge-center {
       display: flex;
@@ -186,7 +247,7 @@
     .scoreboard-chevron {
       font-size: 0.72rem;
       font-weight: 600;
-      color: #374151;
+      color: var(--t2);
       line-height: 1;
     }
 
@@ -201,7 +262,7 @@
       width: 0; height: 0;
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-bottom: 8px solid #e5e7eb;
+      border-bottom: 8px solid var(--border);
     }
     .arrow-up.active  { border-bottom-color: #dc2626; }
 
@@ -209,14 +270,14 @@
       width: 0; height: 0;
       border-left: 6px solid transparent;
       border-right: 6px solid transparent;
-      border-top: 8px solid #e5e7eb;
+      border-top: 8px solid var(--border);
     }
     .arrow-down.active { border-top-color: #dc2626; }
 
     .inning-text {
       font-size: 0.72rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: var(--t4);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -235,19 +296,19 @@
     }
 
     thead th {
-      color: #9ca3af;
+      color: var(--t4);
       font-weight: 500;
       padding-bottom: 6px;
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid var(--control);
     }
 
-    tbody tr + tr { border-top: 1px solid #f9fafb; }
+    tbody tr + tr { border-top: 1px solid var(--border); }
 
     .team-cell {
       text-align: left !important;
       padding-left: 2px !important;
       font-weight: 700;
-      color: #374151;
+      color: var(--t2);
       white-space: nowrap;
       font-size: 0.72rem;
       min-width: 48px;
@@ -256,7 +317,7 @@
     .batting { color: #dc2626 !important; }
 
     .active-cell {
-      background: #fef2f2;
+      background: var(--bg-red);
       color: #dc2626;
       font-weight: 700;
       border-radius: 4px;
@@ -264,9 +325,9 @@
 
     .runs-col {
       font-weight: 800 !important;
-      color: #111827 !important;
+      color: var(--t1) !important;
       font-size: 0.85rem;
-      border-left: 1px solid #f3f4f6;
+      border-left: 1px solid var(--control);
     }
 
     /* ── FIELD CARD: diamond + count side by side ── */
@@ -298,7 +359,7 @@
     .count-label {
       font-size: 0.72rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: var(--t4);
       text-transform: uppercase;
       letter-spacing: 0.8px;
       min-width: 48px;
@@ -322,7 +383,7 @@
 
     .count-divider {
       border: none;
-      border-top: 1px solid #f3f4f6;
+      border-top: 1px solid var(--control);
       margin: 2px 0;
     }
 
@@ -341,16 +402,16 @@
     #pitchCount {
       font-size: 1.2rem;
       font-weight: 800;
-      color: #111827;
+      color: var(--t1);
       min-width: 2.2ch;
       text-align: center;
     }
 
     .pitch-adj {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
+      background: var(--f9);
+      border: 1px solid var(--border);
       border-radius: 6px;
-      color: #6b7280;
+      color: var(--t3);
       font-size: 1rem;
       width: 28px;
       height: 28px;
@@ -359,7 +420,7 @@
       line-height: 1;
     }
 
-    .pitch-adj:active { background: #f3f4f6; }
+    .pitch-adj:active { background: var(--control); }
 
     /* ── ACTION BUTTONS ── */
     .actions {
@@ -371,7 +432,7 @@
       max-width: 480px;
       padding: 10px 12px;
       padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));
-      background: #f1f5f9;
+      background: var(--bg);
       z-index: 40;
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -409,10 +470,10 @@
 
     .btn-sm {
       padding: 11px 4px;
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 10px;
-      color: #374151;
+      color: var(--t2);
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 600;
@@ -420,7 +481,7 @@
       text-align: center;
     }
 
-    .btn-sm:active { background: #f9fafb; }
+    .btn-sm:active { background: var(--f9); }
 
     /* ── BOTTOM ROW ── */
     .bottom-row {
@@ -431,7 +492,7 @@
     .btn-save-game {
       flex: 1;
       padding: 12px;
-      background: #fff;
+      background: var(--card);
       border: 1.5px solid #16a34a;
       border-radius: 10px;
       color: #16a34a;
@@ -441,28 +502,28 @@
       cursor: pointer;
     }
 
-    .btn-save-game:active { background: #f0fdf4; }
+    .btn-save-game:active { background: var(--bg-green); }
 
     .btn-new-game {
       flex: 1;
       padding: 12px;
-      background: #fff;
-      border: 1.5px solid #e5e7eb;
+      background: var(--card);
+      border: 1.5px solid var(--border);
       border-radius: 10px;
-      color: #9ca3af;
+      color: var(--t4);
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 500;
       cursor: pointer;
     }
 
-    .btn-new-game:active { background: #f9fafb; }
+    .btn-new-game:active { background: var(--f9); }
 
     /* ── CHANGES PANEL ── */
     .changes-overlay {
       position: fixed;
       top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.45);
+      background: var(--overlay);
       z-index: 100;
     }
 
@@ -471,7 +532,7 @@
       bottom: 0; left: 0; right: 0;
       max-width: 480px;
       margin: 0 auto;
-      background: #f1f5f9;
+      background: var(--bg);
       border-radius: 20px 20px 0 0;
       max-height: 88vh;
       overflow-y: auto;
@@ -482,8 +543,8 @@
     .changes-header {
       position: sticky;
       top: 0;
-      background: #fff;
-      border-bottom: 1px solid #e5e7eb;
+      background: var(--card);
+      border-bottom: 1px solid var(--border);
       border-radius: 20px 20px 0 0;
       display: flex;
       align-items: center;
@@ -494,12 +555,12 @@
     .changes-title {
       font-size: 1.0rem;
       font-weight: 700;
-      color: #111827;
+      color: var(--t1);
     }
 
     .changes-done-btn {
-      background: #111827;
-      color: #fff;
+      background: var(--t1);
+      color: var(--bg);
       border: none;
       border-radius: 8px;
       padding: 7px 16px;
@@ -514,7 +575,7 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.9px;
-      color: #6b7280;
+      color: var(--t3);
       padding: 12px 16px 4px;
     }
 
@@ -523,17 +584,17 @@
       align-items: center;
       gap: 8px;
       padding: 9px 16px;
-      background: #fff;
-      border-bottom: 1px solid #f3f4f6;
+      background: var(--card);
+      border-bottom: 1px solid var(--control);
     }
 
     .changes-player-row.current-batter {
-      background: #fef2f2;
+      background: var(--bg-red);
     }
 
     .changes-order {
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: var(--t4);
       min-width: 16px;
       text-align: right;
     }
@@ -546,7 +607,7 @@
     .changes-name {
       flex: 1;
       font-size: 0.85rem;
-      color: #111827;
+      color: var(--t1);
       font-weight: 500;
     }
 
@@ -557,22 +618,22 @@
 
     .changes-sub-btn {
       font-size: 0.72rem;
-      background: #f3f4f6;
-      border: 1px solid #e5e7eb;
+      background: var(--control);
+      border: 1px solid var(--border);
       border-radius: 6px;
       padding: 5px 10px;
-      color: #374151;
+      color: var(--t2);
       cursor: pointer;
       white-space: nowrap;
     }
 
-    .changes-sub-btn:active { background: #e5e7eb; }
+    .changes-sub-btn:active { background: var(--border); }
 
 
     .changes-sub-form {
       padding: 8px 16px 10px 40px;
-      background: #f8fafc;
-      border-bottom: 1px solid #e5e7eb;
+      background: var(--card-alt);
+      border-bottom: 1px solid var(--border);
       display: flex;
       gap: 6px;
       align-items: center;
@@ -582,12 +643,12 @@
     .changes-sub-input {
       flex: 1;
       min-width: 110px;
-      border: 1px solid #d1d5db;
+      border: 1px solid var(--t5);
       border-radius: 8px;
       padding: 7px 10px;
       font-family: inherit;
       font-size: 0.85rem;
-      background: #fff;
+      background: var(--card);
     }
 
     .changes-confirm-btn {
@@ -604,12 +665,12 @@
 
     .changes-cancel-btn {
       background: transparent;
-      border: 1px solid #e5e7eb;
+      border: 1px solid var(--border);
       border-radius: 7px;
       padding: 7px 10px;
       font-family: inherit;
       font-size: 0.85rem;
-      color: #9ca3af;
+      color: var(--t4);
       cursor: pointer;
     }
 
@@ -625,13 +686,13 @@
     .section-divider::after {
       content: '';
       flex: 1;
-      border-top: 1px solid #e5e7eb;
+      border-top: 1px solid var(--border);
     }
 
     .section-divider span {
       font-size: 0.72rem;
       font-weight: 700;
-      color: #d1d5db;
+      color: var(--t5);
       text-transform: uppercase;
       letter-spacing: 1.2px;
       white-space: nowrap;
@@ -646,10 +707,10 @@
     .history-toggle-btn {
       flex: 1;
       padding: 11px 12px;
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 10px;
-      color: #374151;
+      color: var(--t2);
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 600;
@@ -657,14 +718,14 @@
       text-align: left;
     }
 
-    .history-toggle-btn:active { background: #f9fafb; }
+    .history-toggle-btn:active { background: var(--f9); }
 
     .btn-transfer {
       padding: 11px 12px;
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 10px;
-      color: #374151;
+      color: var(--t2);
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 600;
@@ -672,7 +733,7 @@
       white-space: nowrap;
     }
 
-    .btn-transfer:active { background: #f9fafb; }
+    .btn-transfer:active { background: var(--f9); }
 
     #historyList {
       display: none;
@@ -684,8 +745,8 @@
     .history-entry {
       display: flex;
       flex-direction: column;
-      background: #fff;
-      border: 1px solid #f3f4f6;
+      background: var(--card);
+      border: 1px solid var(--control);
       border-radius: 12px;
       box-shadow: 0 1px 2px rgba(0,0,0,0.04);
       overflow: hidden;
@@ -699,12 +760,12 @@
       cursor: pointer;
     }
 
-    .history-entry-header:active { background: #f9fafb; }
+    .history-entry-header:active { background: var(--f9); }
 
     .history-expand {
       background: transparent;
       border: none;
-      color: #9ca3af;
+      color: var(--t4);
       font-size: 0.72rem;
       padding: 2px 4px;
       cursor: pointer;
@@ -712,7 +773,7 @@
     }
 
     .history-stats {
-      border-top: 1px solid #f3f4f6;
+      border-top: 1px solid var(--control);
       padding: 12px 14px;
       flex-direction: column;
       gap: 14px;
@@ -720,7 +781,7 @@
 
     .history-date {
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: var(--t4);
       white-space: nowrap;
       min-width: 64px;
     }
@@ -728,7 +789,7 @@
     .history-score {
       flex: 1;
       font-size: 0.85rem;
-      color: #374151;
+      color: var(--t2);
       text-align: center;
       font-weight: 500;
     }
@@ -738,26 +799,26 @@
       font-weight: 700;
     }
 
-    .history-score .sep { color: #d1d5db; margin: 0 5px; }
+    .history-score .sep { color: var(--t5); margin: 0 5px; }
 
     .history-delete {
       background: transparent;
       border: none;
-      color: #d1d5db;
+      color: var(--t5);
       cursor: pointer;
       font-size: 0.85rem;
       padding: 2px 4px;
     }
 
-    .history-delete:active { color: #9ca3af; }
+    .history-delete:active { color: var(--t4); }
 
     .history-empty {
       text-align: center;
-      color: #9ca3af;
+      color: var(--t4);
       font-size: 0.85rem;
       padding: 16px;
-      background: #fff;
-      border: 1px solid #f3f4f6;
+      background: var(--card);
+      border: 1px solid var(--control);
       border-radius: 12px;
     }
 
@@ -772,7 +833,7 @@
     .as-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(0,0,0,0.35);
+      background: var(--overlay-lt);
     }
 
     .as-panel {
@@ -782,7 +843,7 @@
       transform: translateX(-50%);
       width: 100%;
       max-width: 480px;
-      background: #fff;
+      background: var(--card);
       border-radius: 20px 20px 0 0;
       padding: 20px 16px 40px;
     }
@@ -790,7 +851,7 @@
     .as-title {
       font-size: 0.72rem;
       font-weight: 700;
-      color: #9ca3af;
+      color: var(--t4);
       text-align: center;
       text-transform: uppercase;
       letter-spacing: 0.8px;
@@ -816,12 +877,12 @@
     }
 
     .as-btn:active { filter: brightness(0.92); }
-    .as-btn-advance { background: #eff6ff; color: #2563eb; }
-    .as-btn-score   { background: #f0fdf4; color: #16a34a; }
-    .as-btn-out     { background: #fef2f2; color: #dc2626; }
-    .as-btn-hit     { background: #fffbeb; color: #d97706; }
-    .as-btn-hr      { background: #fdf4ff; color: #9333ea; }
-    .as-btn-cancel  { background: #f9fafb; color: #9ca3af; margin-top: 4px; }
+    .as-btn-advance { background: var(--bg-blue); color: #2563eb; }
+    .as-btn-score   { background: var(--bg-green); color: #16a34a; }
+    .as-btn-out     { background: var(--bg-red); color: #dc2626; }
+    .as-btn-hit     { background: var(--bg-amber); color: #d97706; }
+    .as-btn-hr      { background: var(--bg-purple); color: #9333ea; }
+    .as-btn-cancel  { background: var(--f9); color: var(--t4); margin-top: 4px; }
 
     /* ── BATTER CARD ── */
     .batter-row {
@@ -841,7 +902,7 @@
     .batter-label {
       font-size: 0.72rem;
       font-weight: 700;
-      color: #9ca3af;
+      color: var(--t4);
       text-transform: uppercase;
       letter-spacing: 1px;
     }
@@ -856,34 +917,34 @@
     .batter-order-num {
       font-size: 0.72rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: var(--t4);
     }
 
     .batter-name {
       font-size: 1.0rem;
       font-weight: 700;
-      color: #111827;
+      color: var(--t1);
     }
 
     .batter-pos-badge {
       font-size: 0.72rem;
       font-weight: 600;
-      color: #6b7280;
-      background: #f3f4f6;
+      color: var(--t3);
+      background: var(--control);
       padding: 1px 5px;
       border-radius: 4px;
     }
 
     .batter-stats-line {
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: var(--t4);
     }
 
     .batter-nav {
-      background: #f9fafb;
-      border: 1px solid #e5e7eb;
+      background: var(--f9);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #9ca3af;
+      color: var(--t4);
       font-size: 0.72rem;
       width: 34px;
       height: 34px;
@@ -893,15 +954,15 @@
       line-height: 1;
     }
 
-    .batter-nav:active { background: #f3f4f6; }
+    .batter-nav:active { background: var(--control); }
 
     .btn-changes-card {
       width: 100%;
       padding: 9px;
-      background: #f8fafc;
-      border: 1px solid #e5e7eb;
+      background: var(--card-alt);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #374151;
+      color: var(--t2);
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 600;
@@ -910,13 +971,13 @@
       letter-spacing: 0.2px;
     }
 
-    .btn-changes-card:active { background: #f1f5f9; }
+    .btn-changes-card:active { background: var(--bg); }
 
     /* ── LINEUP STATS ── */
     .lineup-stats-team {
       font-size: 0.72rem;
       font-weight: 700;
-      color: #374151;
+      color: var(--t2);
       text-transform: uppercase;
       letter-spacing: 0.8px;
       margin-bottom: 8px;
@@ -937,11 +998,11 @@
     }
 
     .lineup-stats-table th {
-      color: #9ca3af;
+      color: var(--t4);
       font-weight: 500;
       text-align: center;
       padding: 4px 3px 6px;
-      border-bottom: 1px solid #f3f4f6;
+      border-bottom: 1px solid var(--control);
     }
 
     .lineup-stats-table th.lss-name,
@@ -955,7 +1016,7 @@
       padding: 5px 3px;
     }
 
-    .lineup-stats-table tr + tr { border-top: 1px solid #f9fafb; }
+    .lineup-stats-table tr + tr { border-top: 1px solid var(--border); }
 
     .lss-current td {
       color: #dc2626;
@@ -963,7 +1024,7 @@
     }
 
     .lss-team-section + .lss-team-section {
-      border-top: 1px solid #f3f4f6;
+      border-top: 1px solid var(--control);
       padding-top: 10px;
       margin-top: 4px;
     }
@@ -973,11 +1034,11 @@
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.8px;
-      color: #6b7280;
+      color: var(--t3);
       margin-top: 12px;
       margin-bottom: 6px;
       padding-top: 10px;
-      border-top: 1px solid #f3f4f6;
+      border-top: 1px solid var(--control);
     }
 
     /* ── SETUP SCREEN ── */
@@ -997,7 +1058,7 @@
       text-align: center;
       font-size: 1.25rem;
       font-weight: 800;
-      color: #111827;
+      color: var(--t1);
       padding: 8px 0 2px;
       letter-spacing: -0.3px;
     }
@@ -1005,28 +1066,28 @@
     .setup-subtitle {
       text-align: center;
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: var(--t4);
       margin-top: 2px;
     }
 
     .setup-section-label {
       font-size: 0.72rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: var(--t4);
       text-transform: uppercase;
       letter-spacing: 0.8px;
       margin-bottom: 8px;
     }
 
     .setup-team-input {
-      border: 1.5px solid #e5e7eb;
+      border: 1.5px solid var(--border);
       border-radius: 10px;
       padding: 10px 14px;
       font-size: 0.85rem;
       font-family: inherit;
       font-weight: 600;
-      color: #111827;
-      background: #f9fafb;
+      color: var(--t1);
+      background: var(--f9);
       outline: none;
       width: 100%;
       transition: border-color 0.15s;
@@ -1034,7 +1095,7 @@
 
     .setup-team-input:focus {
       border-color: #dc2626;
-      background: #fff;
+      background: var(--card);
     }
 
     .btn-start-game {
@@ -1057,17 +1118,17 @@
     .btn-continue-game {
       width: 100%;
       padding: 13px;
-      background: #fff;
-      border: 1.5px solid #e5e7eb;
+      background: var(--card);
+      border: 1.5px solid var(--border);
       border-radius: 12px;
-      color: #6b7280;
+      color: var(--t3);
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 500;
       cursor: pointer;
     }
 
-    .btn-continue-game:active { background: #f9fafb; }
+    .btn-continue-game:active { background: var(--f9); }
 
     /* ── PLAYER LIST ── */
     .setup-lineup-bar {
@@ -1078,10 +1139,10 @@
     }
 
     .btn-add-player {
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 8px;
-      color: #6b7280;
+      color: var(--t3);
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 500;
@@ -1089,10 +1150,10 @@
       cursor: pointer;
     }
 
-    .btn-add-player:active { background: #f3f4f6; }
+    .btn-add-player:active { background: var(--control); }
 
     .btn-clear-lineup {
-      background: #fff;
+      background: var(--card);
       border: 1px solid #fca5a5;
       border-radius: 8px;
       color: #dc2626;
@@ -1103,7 +1164,7 @@
       cursor: pointer;
     }
 
-    .btn-clear-lineup:active { background: #fef2f2; }
+    .btn-clear-lineup:active { background: var(--bg-red); }
 
     .btn-clear-lineup.btn-clear-armed {
       background: #dc2626;
@@ -1114,7 +1175,7 @@
     .btn-clear-lineup.btn-clear-armed:active { background: #b91c1c; }
 
     .btn-swap-teams {
-      background: #fff;
+      background: var(--card);
       border: 1px solid #c7d2fe;
       border-radius: 10px;
       color: #4f46e5;
@@ -1128,7 +1189,7 @@
       gap: 6px;
     }
 
-    .btn-swap-teams:active { background: #eef2ff; }
+    .btn-swap-teams:active { background: var(--bg-indigo); }
 
     .player-list {
       display: flex;
@@ -1138,7 +1199,7 @@
 
     .player-list-empty {
       text-align: center;
-      color: #9ca3af;
+      color: var(--t4);
       font-size: 0.72rem;
       padding: 8px 0 2px;
     }
@@ -1147,15 +1208,15 @@
       display: flex;
       align-items: center;
       gap: 7px;
-      background: #f9fafb;
-      border: 1px solid #f3f4f6;
+      background: var(--f9);
+      border: 1px solid var(--control);
       border-radius: 10px;
       padding: 8px 10px;
     }
 
     .player-num {
       font-size: 0.72rem;
-      color: #9ca3af;
+      color: var(--t4);
       min-width: 14px;
       text-align: right;
       flex-shrink: 0;
@@ -1169,15 +1230,15 @@
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 500;
-      color: #111827;
+      color: var(--t1);
       min-width: 0;
     }
 
     .player-pos-select {
-      border: 1px solid #e5e7eb;
+      border: 1px solid var(--border);
       border-radius: 6px;
-      background: #fff;
-      color: #374151;
+      background: var(--card);
+      color: var(--t2);
       font-family: inherit;
       font-size: 0.72rem;
       font-weight: 600;
@@ -1190,7 +1251,7 @@
     .player-remove {
       background: transparent;
       border: none;
-      color: #d1d5db;
+      color: var(--t5);
       font-size: 1rem;
       cursor: pointer;
       padding: 0 2px;
@@ -1198,10 +1259,10 @@
       flex-shrink: 0;
     }
 
-    .player-remove:active { color: #9ca3af; }
+    .player-remove:active { color: var(--t4); }
 
     .drag-handle {
-      color: #d1d5db;
+      color: var(--t5);
       font-size: 1.0rem;
       cursor: grab;
       padding: 0 2px;
@@ -1222,8 +1283,8 @@
       pointer-events: none;
       z-index: 9999;
       opacity: 0.9;
-      background: #fff;
-      border: 1px solid #e5e7eb;
+      background: var(--card);
+      border: 1px solid var(--border);
       border-radius: 10px;
       box-shadow: 0 6px 20px rgba(0,0,0,0.15);
       padding: 8px 10px;
@@ -1244,24 +1305,24 @@
       display: inline-flex;
       align-items: center;
       gap: 4px;
-      background: #fff;
-      border: 1px solid #d1d5db;
+      background: var(--card);
+      border: 1px solid var(--t5);
       border-radius: 6px;
       padding: 5px 8px;
       font-family: inherit;
       font-size: 0.85rem;
       font-weight: 500;
-      color: #111827;
+      color: var(--t1);
       cursor: pointer;
       white-space: nowrap;
     }
 
-    .bench-pick-btn:active { background: #f3f4f6; }
+    .bench-pick-btn:active { background: var(--control); }
 
     .bench-pick-pos {
       font-size: 0.72rem;
-      color: #6b7280;
-      background: #f3f4f6;
+      color: var(--t3);
+      background: var(--control);
       padding: 1px 4px;
       border-radius: 3px;
     }
@@ -1270,7 +1331,7 @@
       width: 100%;
       font-size: 0.72rem;
       font-weight: 600;
-      color: #9ca3af;
+      color: var(--t4);
       text-transform: uppercase;
       letter-spacing: 0.6px;
       margin-bottom: 2px;
@@ -1282,7 +1343,7 @@
       top: 16px;
       left: 50%;
       transform: translateX(-50%);
-      background: #111827;
+      background: var(--toast-bg);
       color: #fff;
       padding: 10px 20px;
       border-radius: 20px;
@@ -2190,6 +2251,7 @@
     <span class="gsb-piece" id="gsbCount"></span>
     <span class="gsb-sep">·</span>
     <span class="gsb-piece" id="gsbRunners"></span>
+    <button class="gsb-theme-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">☀</button>
   </div>
   <div class="gsb-batter" id="gsbBatter"></div>
 </div>
@@ -2229,7 +2291,7 @@
     </div>
     <span id="scoreboardChevron" class="scoreboard-chevron">▼</span>
   </div>
-  <div id="scoreboardWrap" style="display:none; margin-top:8px; border-top:1px solid #f3f4f6; padding-top:8px;">
+  <div id="scoreboardWrap" style="display:none; margin-top:8px; border-top:1px solid var(--control); padding-top:8px;">
     <table id="scoreboard"></table>
   </div>
 </div>
@@ -2251,24 +2313,24 @@
         <line x1="100" y1="18"  x2="18"  y2="100" stroke="#ddd0b0" stroke-width="1.5"/>
         <line x1="18"  y1="100" x2="100" y2="182" stroke="#ddd0b0" stroke-width="1.5"/>
         <!-- Home plate -->
-        <polygon points="100,190 109,181 109,175 91,175 91,181" fill="#9ca3af"/>
+        <polygon points="100,190 109,181 109,175 91,175 91,181" fill="var(--t4)"/>
         <!-- 2nd base -->
         <rect id="base2" x="87" y="7" width="26" height="22" rx="3"
-              fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"
+              fill="var(--border)" stroke="var(--t4)" stroke-width="1.5"
               style="cursor:pointer" onclick="clickBase(1)"/>
-        <text id="baseLabel2" x="100" y="21" fill="#6b7280" font-size="11"
+        <text id="baseLabel2" x="100" y="21" fill="var(--t3)" font-size="11"
               text-anchor="middle" dominant-baseline="middle" pointer-events="none">2</text>
         <!-- 1st base -->
         <rect id="base1" x="163" y="88" width="26" height="24" rx="3"
-              fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"
+              fill="var(--border)" stroke="var(--t4)" stroke-width="1.5"
               style="cursor:pointer" onclick="clickBase(0)"/>
-        <text id="baseLabel1" x="176" y="101" fill="#6b7280" font-size="11"
+        <text id="baseLabel1" x="176" y="101" fill="var(--t3)" font-size="11"
               text-anchor="middle" dominant-baseline="middle" pointer-events="none">1</text>
         <!-- 3rd base -->
         <rect id="base3" x="11" y="88" width="26" height="24" rx="3"
-              fill="#e5e7eb" stroke="#9ca3af" stroke-width="1.5"
+              fill="var(--border)" stroke="var(--t4)" stroke-width="1.5"
               style="cursor:pointer" onclick="clickBase(2)"/>
-        <text id="baseLabel3" x="24" y="101" fill="#6b7280" font-size="11"
+        <text id="baseLabel3" x="24" y="101" fill="var(--t3)" font-size="11"
               text-anchor="middle" dominant-baseline="middle" pointer-events="none">3</text>
       </svg>
     </div>
@@ -2375,6 +2437,25 @@
 </div>
 
 <script>
+  // ─── THEME ─────────────────────────────────────────────────────────────────
+  (function() {
+    const saved = localStorage.getItem('bb_theme');
+    if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  })();
+
+  function toggleTheme() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
+    localStorage.setItem('bb_theme', isDark ? 'light' : 'dark');
+    document.getElementById('themeToggle').textContent = isDark ? '☀' : '☾';
+  }
+
+  // Sync toggle icon on load
+  window.addEventListener('DOMContentLoaded', () => {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    document.getElementById('themeToggle').textContent = isDark ? '☾' : '☀';
+  });
+
   // ─── STATE ─────────────────────────────────────────────────────────────────
   let state = freshState();
 
@@ -2938,7 +3019,7 @@
     const defLbl = ['1', '2', '3'];
     state.bases.forEach((runner, i) => {
       document.getElementById(rects[i])
-        .setAttribute('fill', runner ? '#f59e0b' : '#e5e7eb');
+        .setAttribute('fill', runner ? '#f59e0b' : 'var(--border)');
       const lbl = document.getElementById(labels[i]);
       if (runner) {
         lbl.textContent = runner.orderNum || '?';
@@ -2946,7 +3027,7 @@
         lbl.setAttribute('font-weight', '700');
       } else {
         lbl.textContent = defLbl[i];
-        lbl.setAttribute('fill', '#6b7280');
+        lbl.setAttribute('fill', 'var(--t3)');
         lbl.setAttribute('font-weight', 'normal');
       }
     });
@@ -3806,7 +3887,7 @@
       });
     });
 
-    if (!html) html = '<div style="padding:20px;text-align:center;color:#9ca3af">No lineup set up.</div>';
+    if (!html) html = '<div style="padding:20px;text-align:center;color:var(--t4)">No lineup set up.</div>';
     list.innerHTML = html;
   }
 
@@ -3881,7 +3962,7 @@
     ctx.scale(scale, scale);
 
     // Background
-    ctx.fillStyle = '#f1f5f9';
+    ctx.fillStyle = 'var(--bg)';
     ctx.fillRect(0, 0, W, H);
 
     // Header bar
@@ -3957,7 +4038,7 @@
         const opsVal  = (obpVal !== null && slgVal !== null) ? obpVal + slgVal : null;
         const fmtPct  = v => v === null ? '—' : (v >= 1 ? v.toFixed(3) : '.' + String(Math.round(v*1000)).padStart(3,'0'));
 
-        ctx.fillStyle = i % 2 === 0 ? '#ffffff' : '#f8fafc';
+        ctx.fillStyle = i % 2 === 0 ? '#ffffff' : 'var(--card-alt)';
         ctx.fillRect(PAD, y, W - PAD * 2, ROW_H);
 
         ctx.strokeStyle = '#e2e8f0';
