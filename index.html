@@ -2252,7 +2252,7 @@
     <span class="gsb-piece" id="gsbCount"></span>
     <span class="gsb-sep">·</span>
     <span class="gsb-piece" id="gsbRunners"></span>
-    <button class="gsb-theme-btn" id="themeToggle" onclick="toggleTheme()">☀︎</button>
+    <button class="gsb-theme-btn" id="themeToggle" onclick="toggleTheme()">☼</button>
   </div>
   <div class="gsb-batter" id="gsbBatter"></div>
 </div>
@@ -2448,13 +2448,13 @@
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
     localStorage.setItem('bb_theme', isDark ? 'light' : 'dark');
-    document.getElementById('themeToggle').textContent = isDark ? '☀︎' : '☾';
+    document.getElementById('themeToggle').textContent = isDark ? '☼' : '☾';
   }
 
   // Sync toggle icon on load
   window.addEventListener('DOMContentLoaded', () => {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.getElementById('themeToggle').textContent = isDark ? '☾' : '☀︎';
+    document.getElementById('themeToggle').textContent = isDark ? '☾' : '☼';
   });
 
   // ─── STATE ─────────────────────────────────────────────────────────────────
