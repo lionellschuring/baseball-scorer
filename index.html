@@ -2823,7 +2823,17 @@
   //   - forced runners cannot stay at their original base
   //   - no runner can land on the batter's base
   //   - no two runners can share a base
+  // "Thrown out" is always offered; if it brings outs to 3 the half ends immediately.
   function confirmRunnerPositions(runners, idx, team, batterRunner, batterBase, forcedBases, occupiedBases) {
+    // 3 outs recorded mid-chain — place batter and end the half
+    if (state.outs >= 3) {
+      state.bases[batterBase] = batterRunner;
+      render();
+      showToast('3 Outs — Side retired!', 2200);
+      setTimeout(() => { advanceHalf(); render(); }, 1000);
+      return;
+    }
+
     if (idx >= runners.length) {
       state.bases[batterBase] = batterRunner;
       render();
@@ -2838,7 +2848,7 @@
 
     const next = chosenDest => {
       const newOccupied = new Set(occupiedBases);
-      if (chosenDest < 3) newOccupied.add(chosenDest);
+      if (chosenDest !== null && chosenDest < 3) newOccupied.add(chosenDest);
       confirmRunnerPositions(runners, idx + 1, team, batterRunner, batterBase, forcedBases, newOccupied);
     };
 
@@ -2847,15 +2857,6 @@
     const validDests = [];
     for (let d = minDest; d <= 3; d++) {
       if (d !== batterBase && !occupiedBases.has(d)) validDests.push(d);
-    }
-
-    // Auto-advance when there is no real choice
-    if (validDests.length === 1) {
-      const d = validDests[0];
-      if (d === 3) { scoreRunnerObject(runner, team); creditRbi(team); render(); }
-      else         { state.bases[d] = runner; render(); }
-      next(d);
-      return;
     }
 
     // Natural expected destination given the hit distance
@@ -2875,6 +2876,12 @@
         cls:   isExpected ? 'as-btn-score' : 'as-btn-advance',
         fn() { state.bases[d] = runner; render(); next(d); }
       };
+    });
+
+    options.push({
+      label: '✕ Thrown out',
+      cls:   'as-btn-out',
+      fn() { state.outs++; render(); next(null); }
     });
 
     showActionSheet(`${name} — where did they end up?`, options);
