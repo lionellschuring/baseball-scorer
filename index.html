@@ -2769,7 +2769,7 @@
       advanceBatter();
       finalizeOut();
     } else {
-      showOutPicker(defTeam);
+      showFielderPicker(defTeam);
     }
   }
 
@@ -2794,26 +2794,14 @@
     if (catcher) catcher.po = (catcher.po || 0) + 1;
   }
 
-  function showOutPicker(defTeam) {
-    const outTypes = ['Flyout', 'Groundout', 'Lineout', 'Pop-up'];
-    showActionSheet('Type of Out', [
-      ...outTypes.map(t => ({
-        label: t, cls: 'as-btn-advance',
-        fn() { showFielderPicker(t, defTeam); }
-      })),
-      { label: 'Other',  cls: 'as-btn-advance', fn() { applyOutFinal(); } },
-      { label: 'Cancel', cls: 'as-btn-cancel',  fn() {} },
-    ]);
-  }
-
-  function showFielderPicker(outType, defTeam) {
+  function showFielderPicker(defTeam) {
     const defLineup = state.lineup[defTeam] || [];
     const fielderBtns = defLineup.map((p, i) => ({
       label: `${p.pos || '?'}  ${p.name || 'Player ' + (i + 1)}`,
       cls: 'as-btn-advance',
       fn() { p.po = (p.po || 0) + 1; applyOutFinal(); }
     }));
-    showActionSheet(`${outType} — Who made the play?`, [
+    showActionSheet('Who made the out?', [
       ...fielderBtns,
       { label: 'Unknown fielder', cls: 'as-btn-cancel', fn() { applyOutFinal(); } },
     ]);
