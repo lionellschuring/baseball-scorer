@@ -126,25 +126,6 @@
       letter-spacing: 0.4px;
     }
 
-    .theme-toggle {
-      position: fixed;
-      top: 14px;
-      right: 14px;
-      z-index: 200;
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 50%;
-      width: 34px;
-      height: 34px;
-      font-size: 1rem;
-      line-height: 1;
-      cursor: pointer;
-      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-    .theme-toggle:active { opacity: 0.7; }
 
     /* ── HEADER CARD ── */
     .score-header {
@@ -1393,8 +1374,6 @@
 </head>
 <body>
 
-<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">☀</button>
-
 <div id="splashScreen">
 <svg version="1.1" id="Layer_1"
 	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 863.5 367.3" xml:space="preserve" style="width:82%;max-width:360px;height:auto;display:block;">
@@ -2420,6 +2399,7 @@
   <button class="history-toggle-btn" id="historyToggle" onclick="toggleHistory()">Past Games ▼</button>
   <button class="btn-transfer" onclick="exportHistory()">Export ↓</button>
   <button class="btn-transfer" onclick="importHistory()">Import ↑</button>
+  <button class="btn-transfer" id="themeToggle" onclick="toggleTheme()">☀</button>
 </div>
 <div id="historyList"></div>
 
