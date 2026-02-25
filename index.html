@@ -2444,17 +2444,27 @@
     if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
   })();
 
+  function setThemeIcon(isDark) {
+    const btn = document.getElementById('themeToggle');
+    if (isDark) {
+      btn.textContent  = '☾';
+      btn.style.fontSize = '1rem';
+    } else {
+      btn.textContent  = '☼';
+      btn.style.fontSize = '3rem';
+    }
+  }
+
   function toggleTheme() {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
     localStorage.setItem('bb_theme', isDark ? 'light' : 'dark');
-    document.getElementById('themeToggle').textContent = isDark ? '☼' : '☾';
+    setThemeIcon(!isDark);
   }
 
   // Sync toggle icon on load
   window.addEventListener('DOMContentLoaded', () => {
-    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.getElementById('themeToggle').textContent = isDark ? '☾' : '☼';
+    setThemeIcon(document.documentElement.getAttribute('data-theme') === 'dark');
   });
 
   // ─── STATE ─────────────────────────────────────────────────────────────────
