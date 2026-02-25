@@ -2399,7 +2399,7 @@
   <button class="history-toggle-btn" id="historyToggle" onclick="toggleHistory()">Past Games ▼</button>
   <button class="btn-transfer" onclick="exportHistory()">Export ↓</button>
   <button class="btn-transfer" onclick="importHistory()">Import ↑</button>
-  <button class="btn-transfer" id="themeToggle" onclick="toggleTheme()">☀</button>
+  <button class="btn-transfer" id="themeToggle" onclick="toggleTheme()">Dark</button>
 </div>
 <div id="historyList"></div>
 
@@ -2435,13 +2435,13 @@
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
     document.documentElement.setAttribute('data-theme', isDark ? 'light' : 'dark');
     localStorage.setItem('bb_theme', isDark ? 'light' : 'dark');
-    document.getElementById('themeToggle').textContent = isDark ? '☀' : '☾';
+    document.getElementById('themeToggle').textContent = isDark ? 'Dark' : 'Light';
   }
 
   // Sync toggle icon on load
   window.addEventListener('DOMContentLoaded', () => {
     const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
-    document.getElementById('themeToggle').textContent = isDark ? '☾' : '☀';
+    document.getElementById('themeToggle').textContent = isDark ? 'Light' : 'Dark';
   });
 
   // ─── STATE ─────────────────────────────────────────────────────────────────
