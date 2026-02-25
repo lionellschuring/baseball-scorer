@@ -98,6 +98,7 @@
       align-items: center;
       gap: 7px;
       flex-wrap: wrap;
+      position: relative;
     }
 
     .gsb-piece {
@@ -127,16 +128,18 @@
     }
 
     .gsb-theme-btn {
-      margin-left: auto;
+      position: absolute;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
       background: none;
       border: none;
       cursor: pointer;
       font-size: 1rem;
       line-height: 1;
-      padding: 0 2px;
+      padding: 0;
       color: #f9fafb;
       opacity: 0.55;
-      flex-shrink: 0;
     }
     .gsb-theme-btn:active { opacity: 1; }
 
