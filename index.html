@@ -3780,7 +3780,7 @@
             ${POSITIONS.map(pos => `<option${p.pos === pos ? ' selected' : ''}>${escAttr(pos)}</option>`).join('')}
           </select>
           <span class="changes-name">${escAttr(p.name || `Player ${i + 1}`)}</span>
-          <button class="changes-sub-btn" onclick="toggleSubForm('${team}', ${i})">↔</button>
+          <button class="changes-sub-btn" onclick="toggleSubForm('${team}', ${i})">↗</button>
         </div>
         <div class="changes-sub-form" id="csf-${team}-${i}" style="display:none">
           ${(() => {
