@@ -2778,7 +2778,6 @@
       render();
     } else {
       const hitNames = ['Single', 'Double', 'Triple'];
-      const advance  = baseIdx + 1;
 
       // Snapshot existing runners 3rd→1st, then clear them from the diamond
       const runners = [];
@@ -2786,6 +2785,18 @@
         if (state.bases[i]) {
           runners.push({ fromBase: i, runner: state.bases[i] });
           state.bases[i] = null;
+        }
+      }
+
+      // Compute force chain: batter forces runner on 1B; propagates through
+      // consecutive occupied bases (1B→2B→3B).
+      const allFromBases = runners.map(r => r.fromBase);
+      const forcedBases  = new Set();
+      if (allFromBases.includes(0)) {
+        forcedBases.add(0);
+        if (allFromBases.includes(1)) {
+          forcedBases.add(1);
+          if (allFromBases.includes(2)) forcedBases.add(2);
         }
       }
 
@@ -2801,14 +2812,18 @@
         render();
       } else {
         render(); // refresh diamond + count before showing sheets
-        confirmRunnerPositions(runners, 0, advance, team, batterRunner, baseIdx);
+        confirmRunnerPositions(runners, 0, team, batterRunner, baseIdx, forcedBases, new Set());
       }
     }
   }
 
   // Chains action sheets for each existing runner asking where they ended up,
   // then places the batter once all runners are confirmed.
-  function confirmRunnerPositions(runners, idx, advance, team, batterRunner, batterBase) {
+  // Only offers destinations that are physically possible:
+  //   - forced runners cannot stay at their original base
+  //   - no runner can land on the batter's base
+  //   - no two runners can share a base
+  function confirmRunnerPositions(runners, idx, team, batterRunner, batterBase, forcedBases, occupiedBases) {
     if (idx >= runners.length) {
       state.bases[batterBase] = batterRunner;
       render();
@@ -2816,36 +2831,50 @@
     }
 
     const { fromBase, runner } = runners[idx];
-    const name        = runner.name || `#${runner.orderNum}`;
-    const baseLabels  = ['1st base', '2nd base', '3rd base'];
-    const expectedDest = Math.min(3, fromBase + advance);
-    const next = () => confirmRunnerPositions(runners, idx + 1, advance, team, batterRunner, batterBase);
+    const name       = runner.name || `#${runner.orderNum}`;
+    const baseLabels = ['1st base', '2nd base', '3rd base'];
+    const isForced   = forcedBases.has(fromBase);
+    const minDest    = isForced ? fromBase + 1 : fromBase;
 
-    // Build option list: expected destination first (green), then other forward
-    // options (blue), then "held at original base" (grey) as a safety valve.
-    const forwardDests = [expectedDest,
-      ...[3, 2, 1, 0].filter(d => d > fromBase && d !== expectedDest)];
+    const next = chosenDest => {
+      const newOccupied = new Set(occupiedBases);
+      if (chosenDest < 3) newOccupied.add(chosenDest);
+      confirmRunnerPositions(runners, idx + 1, team, batterRunner, batterBase, forcedBases, newOccupied);
+    };
 
-    const options = forwardDests.map(d => {
+    // Valid destinations: at least minDest, can't share batter's base or an
+    // already-confirmed runner's base.
+    const validDests = [];
+    for (let d = minDest; d <= 3; d++) {
+      if (d !== batterBase && !occupiedBases.has(d)) validDests.push(d);
+    }
+
+    // Auto-advance when there is no real choice
+    if (validDests.length === 1) {
+      const d = validDests[0];
+      if (d === 3) { scoreRunnerObject(runner, team); creditRbi(team); render(); }
+      else         { state.bases[d] = runner; render(); }
+      next(d);
+      return;
+    }
+
+    // Natural expected destination given the hit distance
+    const expectedDest = Math.min(3, fromBase + batterBase + 1);
+
+    const options = validDests.map(d => {
       const isExpected = d === expectedDest;
       if (d === 3) {
         return {
           label: '🏠 Scored',
           cls:   isExpected ? 'as-btn-score' : 'as-btn-advance',
-          fn() { scoreRunnerObject(runner, team); creditRbi(team); render(); next(); }
+          fn() { scoreRunnerObject(runner, team); creditRbi(team); render(); next(3); }
         };
       }
       return {
         label: `→ ${baseLabels[d]}`,
         cls:   isExpected ? 'as-btn-score' : 'as-btn-advance',
-        fn() { state.bases[d] = runner; render(); next(); }
+        fn() { state.bases[d] = runner; render(); next(d); }
       };
-    });
-
-    options.push({
-      label: `↩ Held at ${baseLabels[fromBase]}`,
-      cls:   'as-btn-cancel',
-      fn() { state.bases[fromBase] = runner; render(); next(); }
     });
 
     showActionSheet(`${name} — where did they end up?`, options);
