@@ -126,18 +126,25 @@
       letter-spacing: 0.4px;
     }
 
-    .gsb-theme-btn {
-      margin-left: auto;
-      background: none;
-      border: none;
-      cursor: pointer;
-      font-size: 0.9rem;
+    .theme-toggle {
+      position: fixed;
+      top: 14px;
+      right: 14px;
+      z-index: 200;
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 50%;
+      width: 34px;
+      height: 34px;
+      font-size: 1rem;
       line-height: 1;
-      padding: 2px 4px;
-      opacity: 0.6;
-      color: #f9fafb;
+      cursor: pointer;
+      box-shadow: 0 1px 4px rgba(0,0,0,0.10);
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
-    .gsb-theme-btn:active { opacity: 1; }
+    .theme-toggle:active { opacity: 0.7; }
 
     /* ── HEADER CARD ── */
     .score-header {
@@ -1386,6 +1393,8 @@
 </head>
 <body>
 
+<button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">☀</button>
+
 <div id="splashScreen">
 <svg version="1.1" id="Layer_1"
 	 xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" viewBox="0 0 863.5 367.3" xml:space="preserve" style="width:82%;max-width:360px;height:auto;display:block;">
@@ -2251,7 +2260,6 @@
     <span class="gsb-piece" id="gsbCount"></span>
     <span class="gsb-sep">·</span>
     <span class="gsb-piece" id="gsbRunners"></span>
-    <button class="gsb-theme-btn" id="themeToggle" onclick="toggleTheme()" title="Toggle dark mode">☀</button>
   </div>
   <div class="gsb-batter" id="gsbBatter"></div>
 </div>
